@@ -59,15 +59,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="group-data-[collapsible=icon]:hidden">
-        <div className="rounded-md border border-sidebar-border bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground">
-          <p className="font-medium text-foreground">Ciclo de Planejamento 2026</p>
-          <p className="text-success font-medium flex items-center gap-1.5 mt-1">
-            <span className="size-2 rounded-full bg-success animate-pulse inline-block" />
-            Conectado à API Backend
-          </p>
-        </div>
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )

@@ -1,8 +1,18 @@
 'use client'
 
-import { ChevronDownIcon, LogOutIcon, RefreshCwIcon, SearchIcon, SettingsIcon, UploadIcon, UserIcon, XIcon } from 'lucide-react'
+import {
+  ChevronDownIcon,
+  LogOutIcon,
+  RefreshCwIcon,
+  SearchIcon,
+  SettingsIcon,
+  UploadIcon,
+  UserIcon,
+  XIcon,
+} from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+
 import { usePlan } from '@/components/plan-provider'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -18,7 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { clearStoredTokens } from '@/lib/api'
+import { clearStoredTokens } from '@/lib/api/client'
 
 export function AppHeader() {
   const { query, setQuery, setUploadOpen, currentUser, loading, reload } = usePlan()
@@ -104,46 +114,68 @@ export function AppHeader() {
           }
         >
           <Avatar size="sm">
-            <AvatarFallback className="bg-white text-xs font-semibold text-[#0f2b5c]">{currentUser.initials}</AvatarFallback>
+            <AvatarFallback className="bg-white text-xs font-semibold text-[#0f2b5c]">
+              {currentUser?.initials || '?'}
+            </AvatarFallback>
           </Avatar>
-          <span className="hidden text-left text-xs leading-tight md:block">
-            <span className="block font-medium">{currentUser.name}</span>
-            <span className="block opacity-80">{currentUser.role}</span>
-          </span>
+          
+          {currentUser ? (
+            <span className="hidden text-left text-xs leading-tight md:block">
+              <span className="block font-medium">{currentUser.name}</span>
+              <span className="block opacity-80">{currentUser.role}</span>
+            </span>
+          ) : (
+            <span className="hidden text-left text-xs leading-tight md:block">
+              <span className="block font-medium">Visitante</span>
+              <span className="block opacity-80">Não autenticado</span>
+            </span>
+          )}
+          
           <ChevronDownIcon className="hidden opacity-70 md:block" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">{currentUser.name}</span>
-              <span className="text-xs font-normal text-muted-foreground">{currentUser.email}</span>
-            </DropdownMenuLabel>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => toast.info(`Usuário autenticado via API: ${currentUser.email} (${currentUser.role})`)}>
-              <UserIcon />
-              Informações da sessão
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => toast.info(`Backend API: http://localhost:8001/docs`)}>
-              <SettingsIcon />
-              Swagger / Docs API
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => {
-                clearStoredTokens()
-                toast.info('Sessão reiniciada.')
-                window.location.reload()
-              }}
-            >
-              <LogOutIcon />
-              Encerrar sessão
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
+          {currentUser ? (
+            <>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="flex flex-col">
+                  <span className="text-sm font-medium text-foreground">{currentUser.name}</span>
+                  <span className="text-xs font-normal text-muted-foreground">{currentUser.email}</span>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => toast.info(`Usuário autenticado via API: ${currentUser.email} (${currentUser.role})`)}>
+                  <UserIcon />
+                  Informações da sessão
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => toast.info(`Backend API: http://localhost:8001/docs`)}>
+                  <SettingsIcon />
+                  Swagger / Docs API
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => {
+                    clearStoredTokens()
+                    toast.info('Sessão encerrada.')
+                    window.location.href = '/login'
+                  }}
+                >
+                  <LogOutIcon />
+                  Encerrar sessão
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </>
+          ) : (
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => window.location.href = '/login'}>
+                <UserIcon />
+                Fazer Login
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </header>

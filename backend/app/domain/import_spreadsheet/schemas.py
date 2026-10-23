@@ -1,60 +1,49 @@
 from datetime import date
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-# Definição dos campos esperados — fonte da verdade pro front também
-FIELD_KEYS = Literal[
-    "strategic_perspective", "strategic_objective",
-    "setor_responsavel", "nome_iniciativa", "gestor_responsavel",
-    "descricao_resumida", "valor_estimado_total", "valor_estimado_ano_vigente",
-    "codigo_kr", "nome_kr", "meta_kr",
-    "numero_sequencial", "nome_etapa",
-    "data_inicio_previsto", "data_termino_previsto",
-    "data_inicio_realizado", "data_termino_realizado",
-    "responsavel_etapa", "status",
-]
-
+# Chaves em inglês — casam 1:1 com o que o frontend envia
 REQUIRED_FIELDS = [
-    "strategic_perspective", "strategic_objective", "setor_responsavel", "nome_iniciativa",
-    "gestor_responsavel", "descricao_resumida",
-    "codigo_kr", "nome_kr", "meta_kr",
-    "numero_sequencial", "nome_etapa",
-    "data_inicio_previsto", "data_termino_previsto",
-    "responsavel_etapa", "status",
+    "perspective", "objective", "responsible_sector", "initiative_name",
+    "responsible_manager", "summary",
+    "kr_code", "kr_name", "kr_goal",
+    "sequential_number", "step_name",
+    "planned_start_date", "planned_end_date",
+    "responsible", "status",
 ]
 
 
 class ImportPreviewRequest(BaseModel):
     grid: list[list[Any]]
-    mapping: dict[str, int]  # FIELD_KEY -> índice da coluna no grid
+    mapping: dict[str, int]
 
 
 class ImportIssue(BaseModel):
-    line: int  # número da linha no arquivo original (1-based no header, 2+ nos dados)
+    line: int
     field: str | None = None
     message: str
 
 
 class ValidatedRow(BaseModel):
-    strategic_perspective: str
-    strategic_objective: str
-    setor_responsavel: str
-    nome_iniciativa: str
-    gestor_responsavel: str
-    descricao_resumida: str
-    valor_estimado_total: str | None = None
-    valor_estimado_ano_vigente: str | None = None
-    codigo_kr: str
-    nome_kr: str
-    meta_kr: str
-    numero_sequencial: int
-    nome_etapa: str
-    data_inicio_previsto: date
-    data_termino_previsto: date
-    data_inicio_realizado: date | None = None
-    data_termino_realizado: date | None = None
-    responsavel_etapa: str
+    perspective: str
+    objective: str
+    responsible_sector: str
+    initiative_name: str
+    responsible_manager: str
+    summary: str
+    total_estimated_value: str | None = None
+    current_year_estimated_value: str | None = None
+    kr_code: str
+    kr_name: str
+    kr_goal: str
+    sequential_number: int
+    step_name: str
+    planned_start_date: date
+    planned_end_date: date
+    actual_start_date: date | None = None
+    actual_end_date: date | None = None
+    responsible: str
     status: str
 
 
@@ -72,7 +61,7 @@ class ImportCommitRequest(BaseModel):
 class ImportCommitResponse(BaseModel):
     strategic_perspectives_created: int
     strategic_objectives_created: int
-    iniciativas_created: int
+    initiatives_created: int
     key_results_created: int
-    etapas_upserted: int
-    etapas_deleted: int  # só em mode=replace
+    steps_upserted: int
+    steps_deleted: int

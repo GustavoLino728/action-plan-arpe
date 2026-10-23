@@ -24,7 +24,11 @@ async def preview_import(
     )
 
 
-@router.post("/commit", response_model=schemas.ImportCommitResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/commit",
+    response_model=schemas.ImportCommitResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def commit_import(
     payload: schemas.ImportCommitRequest,
     db: DBSession,

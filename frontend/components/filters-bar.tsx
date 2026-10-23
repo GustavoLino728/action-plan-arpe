@@ -15,16 +15,16 @@ export function FiltersBar() {
     <section aria-label="Filtros" className="rounded-lg border bg-card p-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         <Field>
-          <FieldLabel htmlFor="f-strategic_perspective">StrategicPerspective</FieldLabel>
+          <FieldLabel htmlFor="f-strategic_perspective">Perspectiva estratégica</FieldLabel>
           <OptionSelect
             id="f-strategic_perspective"
             value={filters.strategic_perspective}
             onValueChange={(v) => setFilters((f) => ({ ...f, strategic_perspective: v }))}
-            options={[{ value: 'todas', label: 'Todas as strategic_perspectives' }, ...strategic_perspectives.map((p) => ({ value: p, label: p }))]}
+            options={[{ value: 'todas', label: 'Todas as perspectivas estratégicas' }, ...strategic_perspectives.map((p) => ({ value: p, label: p }))]}
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="f-setor">Setor da iniciativa</FieldLabel>
+          <FieldLabel htmlFor="f-setor">Setor</FieldLabel>
           <OptionSelect
             id="f-setor"
             value={filters.setor}

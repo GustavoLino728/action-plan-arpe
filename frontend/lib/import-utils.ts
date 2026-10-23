@@ -33,8 +33,8 @@ export interface FieldDef {
 }
 
 export const FIELD_DEFS: FieldDef[] = [
-  { key: 'strategic_perspective', label: 'StrategicPerspective estratégica', group: 'Iniciativa', required: true, aliases: ['strategic_perspective', 'strategic_perspective estrategica'] },
-  { key: 'objetivo', label: 'objetivo estratégico', group: 'Iniciativa', required: true, aliases: ['objetivo', 'objetivo estrategico'] },
+  { key: 'strategic_perspective', label: 'Perspectiva estratégica', group: 'Iniciativa', required: true, aliases: ['perspectiva', 'perspectiva estrategica'] },
+  { key: 'objetivo', label: 'Objetivo estratégico', group: 'Iniciativa', required: true, aliases: ['objetivo', 'objetivo estrategico'] },
   { key: 'setor', label: 'Setor responsável', group: 'Iniciativa', required: false, aliases: ['setor responsavel', 'setor da iniciativa', 'setor'] },
   { key: 'iniciativa', label: 'Nome da iniciativa estratégica', group: 'Iniciativa', required: true, aliases: ['iniciativa', 'iniciativa estrategica', 'nome da iniciativa', 'nome da iniciativa estrategica', 'projeto'] },
   { key: 'gestor', label: 'Gestor responsável', group: 'Iniciativa', required: false, aliases: ['gestor', 'gestor responsavel'] },
@@ -111,7 +111,6 @@ export function parseDateCell(cell: Cell): string | null {
   return null
 }
 
-/** Retorna `undefined` para células vazias e `null` para valores inválidos. */
 export function parsePercentCell(cell: Cell): number | null | undefined {
   if (cell === null || cell === undefined || cell === '') return undefined
   let n: number
@@ -352,7 +351,7 @@ const TI = ['Pessoas e Recursos', 'Fortalecer a estrutura da ARPE e fomentar a i
 const SAN = ['Sociedade', 'Ampliar a cobertura e a qualidade dos serviços regulados', 'SRHS', 'Fiscalização de Esgotamento Sanitário', 'Juliana Barros', 'Fiscalização das ETEs priorizadas na RMR.', '250000', '120000']
 
 export const SAMPLE_GRID: Grid = [
-  ['StrategicPerspective Estratégica', 'objetivo Estratégico', 'Setor Responsável', 'Nome da Iniciativa', 'Gestor Responsável', 'Descrição Resumida', 'Valor Estimado Total', 'Valor Estimado 2026', 'KR', 'Setor do KR', 'Nº', 'Nome da Etapa', 'Previsto', 'Realizado', 'Responsável pela Etapa', 'Status', 'Data Início', 'Data Término'],
+  ['Perspectiva Estratégica', 'Objetivo Estratégico', 'Setor Responsável', 'Nome da Iniciativa', 'Gestor Responsável', 'Descrição Resumida', 'Valor Estimado Total', 'Valor Estimado 2026', 'KR', 'Setor do KR', 'Nº', 'Nome da Etapa', 'Previsto', 'Realizado', 'Responsável pela Etapa', 'Status', 'Data Início', 'Data Término'],
   [...TI, 'Substituir 100% dos computadores com vida útil excedida', 'CTI', 1, 'Levantamento do parque de equipamentos', 100, 100, 'CTI', 'Concluído', '02/02/2026', '13/03/2026'],
   [...TI, 'Substituir 100% dos computadores com vida útil excedida', 'CTI', 2, 'Processo de aquisição dos computadores', 100, 60, 'DAF', 'Atrasado', '01/06/2026', '30/09/2026'],
   [...TI, 'Substituir 100% dos computadores com vida útil excedida', 'CTI', 3, 'Instalação e configuração dos equipamentos', 0, 0, 'CTI', 'A Iniciar', '02/11/2026', '18/12/2026'],

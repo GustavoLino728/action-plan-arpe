@@ -10,13 +10,12 @@ from app.core.middleware import logging_middleware, register_middlewares
 from app.domain.auth.router import router as auth_router
 from app.domain.users.router import router as users_router
 
-# Importação dos novos domínios (Routers)
 from app.domain.strategic_perspective.router import router as strategic_perspective_router
-from app.domain.strategic_objective_estrategico.router import router as strategic_objective_router
-from app.domain.strategic_initiative.router import router as iniciativa_router
+from app.domain.strategic_objective.router import router as strategic_objective_router
+from app.domain.strategic_initiative.router import router as initiative_router
 from app.domain.key_result.router import router as key_result_router
-from app.domain.etapa_plano_acao.router import router as etapa_router
-from app.domain.justificativa_atraso.router import router as justificativa_router
+from app.domain.action_plan_step.router import router as action_plan_step_router
+from app.domain.delay_justification.router import router as justification_router
 from app.domain.strategic_map.router import router as strategic_map_router
 from app.domain.import_spreadsheet.router import router as import_router
 
@@ -69,10 +68,10 @@ def create_app() -> FastAPI:
     
     app.include_router(strategic_perspective_router)
     app.include_router(strategic_objective_router)
-    app.include_router(iniciativa_router)
+    app.include_router(initiative_router)
     app.include_router(key_result_router)
-    app.include_router(etapa_router)
-    app.include_router(justificativa_router)
+    app.include_router(action_plan_step_router)
+    app.include_router(justification_router)
     app.include_router(strategic_map_router)
     app.include_router(import_router)
 

@@ -4,10 +4,10 @@ from sqlalchemy.orm import selectinload
 
 from app.dependencies import DBSession, CurrentUser
 from app.domain.strategic_perspective.models import StrategicPerspective
-from app.domain.strategic_objective_estrategico.models import StrategicObjective
+from app.domain.strategic_objective.models import StrategicObjective
 from app.domain.strategic_initiative.models import StrategicInitiative
 from app.domain.key_result.models import KeyResult
-from app.domain.etapa_plano_acao.models import ActionPlanStep
+from app.domain.action_plan_step.models import ActionPlanStep
 
 router = APIRouter(prefix="/api/v1/strategic-map", tags=["ARPE - Mapa Estratégico"])
 

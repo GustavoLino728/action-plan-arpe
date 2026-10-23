@@ -99,7 +99,7 @@ function IniciativaForm({ existing, onDone }: { existing?: Iniciativa; onDone: (
         <FieldGroup>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field data-invalid={!!errors.strategic_perspective}>
-              <FieldLabel htmlFor="if-strategic_perspective">StrategicPerspective estratégica</FieldLabel>
+              <FieldLabel htmlFor="if-strategic_perspective">Perspectiva estratégica</FieldLabel>
               <Input id="if-strategic_perspective" list="dl-ini-strategic_perspectives" value={values.strategic_perspective} onChange={(e) => set('strategic_perspective', e.target.value)} aria-invalid={!!errors.strategic_perspective} />
               {errors.strategic_perspective && <FieldError>{errors.strategic_perspective}</FieldError>}
             </Field>
@@ -110,7 +110,7 @@ function IniciativaForm({ existing, onDone }: { existing?: Iniciativa; onDone: (
             </Field>
           </div>
           <Field data-invalid={!!errors.objetivo}>
-            <FieldLabel htmlFor="if-objetivo">objetivo estratégico</FieldLabel>
+            <FieldLabel htmlFor="if-objetivo">Objetivo estratégico</FieldLabel>
             <Input id="if-objetivo" list="dl-ini-objetivos" value={values.objetivo} onChange={(e) => set('objetivo', e.target.value)} aria-invalid={!!errors.objetivo} />
             {errors.objetivo && <FieldError>{errors.objetivo}</FieldError>}
           </Field>

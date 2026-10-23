@@ -2,21 +2,22 @@
 
 import * as React from 'react'
 import { toast } from 'sonner'
+
+import { apiFetch, getMe, type UserSession } from '@/lib/api/client'
+import { API_ENDPOINTS } from '@/lib/api/endpoints'
+import type { BackendStrategicPerspectiveDTO } from '@/lib/api/dto'
+import { importRowToBackendPayload } from '@/lib/api/import-mappers'
 import {
-  type BackendStrategicPerspective,
-  createEtapa,
-  createIniciativa,
-  createJustificativa,
+  createDelayJustification,
+  createInitiative,
   createKeyResult,
-  createobjetivo,
-  createStrategicPerspective,
+  createObjective,
+  createPerspective,
+  createStep,
   fetchStrategicMapTree,
-  getMe,
-  mapBackendTreeToPlanData,
-  mapFrontendStatusToBackend,
-  updateEtapaStatus,
-} from '@/lib/api'
-import { CURRENT_USER, type CurrentUserInfo } from '@/lib/current-user'
+  updateStepStatus,
+} from '@/lib/api/services'
+
 import { type ImportRow, type ImportSummary } from '@/lib/import-utils'
 import {
   REFERENCE_DATE,
@@ -77,7 +78,7 @@ interface PlanContextValue {
 
   loading: boolean
   error: string | null
-  currentUser: CurrentUserInfo
+  currentUser: UserSession | null // Mudança: agora pode ser nulo
   reload: () => Promise<void>
   seedDemoData: () => Promise<void>
 
@@ -129,10 +130,10 @@ const EMPTY_DATA: PlanData = { iniciativas: [], krs: [], etapas: [], justificati
 
 export function PlanProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = React.useState<PlanData>(EMPTY_DATA)
-  const [treeRaw, setTreeRaw] = React.useState<BackendStrategicPerspective[]>([])
+  const [treeRaw, setTreeRaw] = React.useState<BackendStrategicPerspectiveDTO[]>([])
   const [loading, setLoading] = React.useState<boolean>(true)
   const [error, setError] = React.useState<string | null>(null)
-  const [currentUser, setCurrentUser] = React.useState<CurrentUserInfo>(CURRENT_USER)
+  const [currentUser, setCurrentUser] = React.useState<UserSession | null>(null)
 
   const [query, setQuery] = React.useState('')
   const [filters, setFilters] = React.useState<Filters>(EMPTY_FILTERS)
@@ -141,30 +142,29 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   const [krForm, setKrForm] = React.useState<KrFormState>(null)
   const [uploadOpen, setUploadOpen] = React.useState(false)
 
-  // Carrega dados diretamente do backend recém estruturado
   const loadPlan = React.useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     setError(null)
     try {
-      const [tree, me] = await Promise.all([
+      const [result, me] = await Promise.all([
         fetchStrategicMapTree(),
-        getMe().catch(() => CURRENT_USER),
+        getMe().catch(() => null), // Se não tiver token, retorna null
       ])
-      const { data: mapped, treeRaw: raw } = mapBackendTreeToPlanData(tree)
-      setData(mapped)
-      setTreeRaw(raw)
+      setData(result.data)
+      setTreeRaw(result.treeRaw)
       if (me) setCurrentUser(me)
     } catch (err: any) {
       console.error('Falha ao sincronizar com backend:', err)
       setError(err.message || 'Falha na conexão com o backend')
-      toast.error(`Falha ao conectar ao backend: ${err.message}`)
     } finally {
       setLoading(false)
     }
   }, [])
 
   React.useEffect(() => {
-    loadPlan()
+    if (typeof window !== 'undefined') {
+      loadPlan()
+    }
   }, [loadPlan])
 
   const { iniciativas, krs, etapas, justificativas } = data
@@ -201,7 +201,10 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
 
   const justSummary = React.useMemo(() => summarizeJustificativas(justificativas), [justificativas])
   const strategic_perspectives = React.useMemo(
-    () => Array.from(new Set([...treeRaw.map((p) => p.nome), ...iniciativas.map((i) => i.strategic_perspective)])).filter(Boolean),
+    () =>
+      Array.from(
+        new Set([...treeRaw.map((p) => p.name), ...iniciativas.map((i) => i.strategic_perspective)]),
+      ).filter(Boolean),
     [treeRaw, iniciativas],
   )
   const setores = React.useMemo(() => unique(iniciativas.map((i) => i.setor)), [iniciativas])
@@ -212,39 +215,36 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
 
   const resetFilters = React.useCallback(() => setFilters(EMPTY_FILTERS), [])
 
-  // Criação de Iniciativa consumindo o backend
+  // --- Iniciativa ---
   const addIniciativa = React.useCallback(
     async (input: IniciativaInput): Promise<Iniciativa> => {
       try {
         const perspName = input.strategic_perspective.trim()
-        let persp = treeRaw.find((p) => p.nome.trim().toLowerCase() === perspName.toLowerCase())
+        let persp = treeRaw.find((p) => p.name.trim().toLowerCase() === perspName.toLowerCase())
         if (!persp) {
-          persp = await createStrategicPerspective(perspName)
+          persp = await createPerspective(perspName)
         }
 
         const objName = input.objetivo.trim()
-        let obj = persp.objetivos?.find((o) => o.nome.trim().toLowerCase() === objName.toLowerCase())
+        let obj = persp.strategic_objectives?.find(
+          (o) => o.name.trim().toLowerCase() === objName.toLowerCase(),
+        )
         if (!obj) {
-          obj = await createobjetivo(persp.id, objName)
+          obj = await createObjective(persp.id, objName)
         }
 
-        const createdBackend = await createIniciativa({
-          objetivo_id: obj.id,
-          setor_responsavel: input.setor.trim(),
-          nome_iniciativa: input.nome.trim(),
-          gestor_responsavel: input.gestor.trim(),
-          descricao_resumida: input.descricao.trim(),
-          valor_estimado_total: input.valorTotal.trim() || null,
-          valor_estimado_ano_vigente: input.valor2026.trim() || null,
+        const createdBackend = await createInitiative({
+          strategic_objective_id: obj.id,
+          responsible_sector: input.setor.trim(),
+          name: input.nome.trim(),
+          responsible_manager: input.gestor.trim(),
+          summary: input.descricao.trim(),
+          total_estimated_value: input.valorTotal.trim() || null,
+          current_year_estimated_value: input.valor2026.trim() || null,
         })
 
         await loadPlan(true)
-
-        const created: Iniciativa = {
-          ...input,
-          id: createdBackend.id,
-        }
-        return created
+        return { ...input, id: createdBackend.id }
       } catch (err: any) {
         toast.error(`Erro ao criar iniciativa no backend: ${err.message}`)
         throw err
@@ -253,19 +253,15 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     [treeRaw, loadPlan],
   )
 
-  // Atualização de Iniciativa
   const updateIniciativa = React.useCallback(async (id: string, input: IniciativaInput) => {
-    // Sinalização: O backend atual não possui endpoint PUT/PATCH /api/v1/iniciativas/{id}
     setData((d) => ({
       ...d,
       iniciativas: d.iniciativas.map((i) => (i.id === id ? { ...input, id } : i)),
     }))
-    toast.info('Iniciativa atualizada na visão local. (Sinalização: Backend não expõe endpoint PUT /iniciativas/{id}).')
+    toast.info('Iniciativa atualizada na visão local. (Backend não expõe PUT /initiatives/{id}).')
   }, [])
 
-  // Exclusão de Iniciativa
   const deleteIniciativa = React.useCallback(async (id: string) => {
-    // Sinalização: O backend atual não possui endpoint DELETE /api/v1/iniciativas/{id}
     setData((d) => {
       const krIds = new Set(d.krs.filter((k) => k.iniciativaId === id).map((k) => k.id))
       const etapaIds = new Set(d.etapas.filter((e) => krIds.has(e.krId)).map((e) => e.id))
@@ -277,27 +273,21 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       }
     })
     setDrawer((s) => (s.open ? { open: false } : s))
-    toast.info('Iniciativa removida da visão local. (Sinalização: Backend não expõe endpoint DELETE /iniciativas/{id}).')
+    toast.info('Iniciativa removida da visão local. (Backend não expõe DELETE /initiatives/{id}).')
   }, [])
 
-  // Criação de KR consumindo o backend
+  // --- Key Result ---
   const addKr = React.useCallback(
     async (input: KRInput): Promise<KR> => {
       try {
         const createdBackend = await createKeyResult({
-          iniciativa_id: input.iniciativaId,
-          codigo_kr: `KR-${Date.now().toString().slice(-4)}`,
-          nome_kr: input.nome.trim(),
-          meta_qualitativa_quantitativa: input.setor.trim() || 'Meta 2026',
+          initiative_id: input.iniciativaId,
+          code: `KR-${Date.now().toString().slice(-4)}`,
+          name: input.nome.trim(),
+          goal: input.setor.trim() || 'Meta 2026',
         })
-
         await loadPlan(true)
-
-        const created: KR = {
-          ...input,
-          id: createdBackend.id,
-        }
-        return created
+        return { ...input, id: createdBackend.id }
       } catch (err: any) {
         toast.error(`Erro ao criar KR no backend: ${err.message}`)
         throw err
@@ -308,7 +298,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
 
   const updateKr = React.useCallback(async (id: string, input: KRInput) => {
     setData((d) => ({ ...d, krs: d.krs.map((k) => (k.id === id ? { ...input, id } : k)) }))
-    toast.info('KR atualizado na visão local. (Sinalização: Backend não expõe endpoint PUT /key-results/{id}).')
+    toast.info('KR atualizado na visão local. (Backend não expõe PUT /key-results/{id}).')
   }, [])
 
   const deleteKr = React.useCallback(async (id: string) => {
@@ -322,32 +312,28 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       }
     })
     setDrawer((s) => (s.open ? { open: false } : s))
-    toast.info('KR removido da visão local. (Sinalização: Backend não expõe endpoint DELETE /key-results/{id}).')
+    toast.info('KR removido da visão local. (Backend não expõe DELETE /key-results/{id}).')
   }, [])
 
-  // Criação de Etapa consumindo o backend
+  // --- Etapa ---
   const addEtapa = React.useCallback(
     async (input: EtapaInput): Promise<Etapa> => {
       try {
-        const statusBackend = mapFrontendStatusToBackend(input.status)
-        const createdBackend = await createEtapa({
+        const createdBackend = await createStep({
           key_result_id: input.krId,
-          numero_sequencial: input.numero,
-          nome_etapa: input.nome.trim(),
-          data_inicio_previsto: input.dataInicio,
-          data_termino_previsto: input.dataTermino,
-          responsavel_etapa: input.responsavel.trim(),
-          status: statusBackend,
+          sequential_number: input.numero,
+          name: input.nome.trim(),
+          planned_start_date: input.dataInicio,
+          planned_end_date: input.dataTermino,
+          responsible: input.responsavel.trim(),
+          status: input.status,
         })
-
         await loadPlan(true)
-
-        const created: Etapa = {
+        return {
           ...input,
           id: createdBackend.id,
           log: [newLog('sistema', 'Etapa criada no banco de dados.')],
         }
-        return created
       } catch (err: any) {
         toast.error(`Erro ao criar etapa no backend: ${err.message}`)
         throw err
@@ -356,7 +342,6 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     [loadPlan],
   )
 
-  // Atualização de Etapa consumindo o endpoint PATCH /api/v1/etapas/{id}/status do backend
   const updateEtapa = React.useCallback(
     async (id: string, input: EtapaInput) => {
       const previous = data.etapas.find((e) => e.id === id)
@@ -364,11 +349,12 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
 
       if (statusChanged) {
         try {
-          const backendStatus = mapFrontendStatusToBackend(input.status)
-          await updateEtapaStatus(id, {
-            status: backendStatus,
-            data_inicio_realizado: input.status === 'concluido' ? new Date().toISOString().slice(0, 10) : null,
-            data_termino_realizado: input.status === 'concluido' ? new Date().toISOString().slice(0, 10) : null,
+          await updateStepStatus(id, {
+            status: input.status,
+            actual_start_date:
+              input.status === 'concluido' ? new Date().toISOString().slice(0, 10) : null,
+            actual_end_date:
+              input.status === 'concluido' ? new Date().toISOString().slice(0, 10) : null,
           })
           await loadPlan(true)
           toast.success(`Status da etapa atualizado para "${input.status}" no backend.`)
@@ -378,19 +364,20 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Se alterou apenas outros dados (nome, responsável, datas)
       setData((d) => ({
         ...d,
         etapas: d.etapas.map((e) => {
           if (e.id !== id) return e
           const log = [...e.log]
           if (e.realizado !== input.realizado) {
-            log.unshift(newLog('comentario', `Realizado atualizado de ${e.realizado}% para ${input.realizado}%.`))
+            log.unshift(
+              newLog('comentario', `Realizado atualizado de ${e.realizado}% para ${input.realizado}%.`),
+            )
           }
           return { ...input, id, log }
         }),
       }))
-      toast.info('Etapa atualizada na visão local. (Sinalização: Backend dispõe de PATCH para status; faltam endpoints para atualizar nome/datas/responsável).')
+      toast.info('Etapa atualizada na visão local. (Backend dispõe de PATCH /steps/{id}/status; falta endpoint para outros campos).')
     },
     [data.etapas, loadPlan],
   )
@@ -402,28 +389,30 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       justificativas: d.justificativas.filter((j) => j.etapaId !== id),
     }))
     setDrawer((s) => (s.open && s.mode !== 'create' && s.id === id ? { open: false } : s))
-    toast.info('Etapa removida da visão local. (Sinalização: Backend não expõe endpoint DELETE /etapas/{id}).')
+    toast.info('Etapa removida da visão local. (Backend não expõe DELETE /steps/{id}).')
   }, [])
 
   const addLog = React.useCallback((etapaId: string, text: string) => {
     setData((d) => ({
       ...d,
-      etapas: d.etapas.map((e) => (e.id === etapaId ? { ...e, log: [newLog('comentario', text), ...e.log] } : e)),
+      etapas: d.etapas.map((e) =>
+        e.id === etapaId ? { ...e, log: [newLog('comentario', text), ...e.log] } : e,
+      ),
     }))
   }, [])
 
-  // Criação de Justificativa consumindo o backend POST /api/v1/justificativas/
+  // --- Justificativa ---
   const addJustificativa = React.useCallback(
     async (etapaId: string, input: JustificativaInput) => {
       try {
-        await createJustificativa({
-          etapa_id: etapaId,
-          data_registro: input.dataRegistro,
-          acao_corretiva: input.acaoCorretiva.trim(),
-          responsavel_acao: input.responsavel.trim(),
-          previsao_solucao: input.previsaoSolucao,
-          sob_governanca_arpe: input.sobGovernanca,
-          resolvido: input.resolvido,
+        await createDelayJustification({
+          step_id: etapaId,
+          registration_date: input.dataRegistro,
+          corrective_action: input.acaoCorretiva.trim(),
+          responsible: input.responsavel.trim(),
+          solution_forecast: input.previsaoSolucao,
+          under_arpe_governance: input.sobGovernanca,
+          resolved: input.resolvido,
         })
         await loadPlan(true)
         toast.success('Justificativa registrada no backend com sucesso.')
@@ -441,95 +430,41 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   const updateJustificativa = React.useCallback(async (id: string, input: JustificativaInput) => {
     setData((d) => ({
       ...d,
-      justificativas: d.justificativas.map((j) => (j.id === id ? { ...input, id, etapaId: j.etapaId } : j)),
+      justificativas: d.justificativas.map((j) =>
+        j.id === id ? { ...input, id, etapaId: j.etapaId } : j,
+      ),
     }))
-    toast.info('Justificativa atualizada localmente. (Sinalização: Backend ainda não dispõe de endpoint para editar/resolver justificativa).')
+    toast.info('Justificativa atualizada localmente. (Backend ainda não expõe endpoint para editar/resolver justificativa).')
   }, [])
 
   const deleteJustificativa = React.useCallback(async (id: string) => {
     setData((d) => ({ ...d, justificativas: d.justificativas.filter((j) => j.id !== id) }))
-    toast.info('Justificativa removida da visão local. (Sinalização: Backend não dispõe de DELETE /justificativas/{id}).')
+    toast.info('Justificativa removida da visão local. (Backend não expõe DELETE /delay-justifications/{id}).')
   }, [])
 
-  // Carga em lote diretamente no backend
+  // --- Import em lote ---
   const importRows = React.useCallback(
     async (importRowsList: ImportRow[], mode: 'append' | 'replace'): Promise<ImportSummary> => {
       setLoading(true)
-      const summary: ImportSummary = { iniciativas: 0, krs: 0, etapas: 0 }
       try {
-        let currentTree = await fetchStrategicMapTree()
-        const perspMap = new Map<string, BackendStrategicPerspective>()
-        for (const p of currentTree) {
-          perspMap.set(p.nome.trim().toLowerCase(), p)
-        }
-
-        for (const r of importRowsList) {
-          // 1. StrategicPerspective
-          const pNorm = r.strategic_perspective.trim().toLowerCase()
-          let persp = perspMap.get(pNorm)
-          if (!persp) {
-            persp = await createStrategicPerspective(r.strategic_perspective.trim())
-            perspMap.set(pNorm, persp)
-          }
-
-          // 2. objetivo
-          const oNorm = r.objetivo.trim().toLowerCase()
-          let obj = persp.objetivos?.find((o) => o.nome.trim().toLowerCase() === oNorm)
-          if (!obj) {
-            obj = await createobjetivo(persp.id, r.objetivo.trim())
-            if (!persp.objetivos) persp.objetivos = []
-            persp.objetivos.push(obj)
-          }
-
-          // 3. Iniciativa
-          const iNorm = r.iniciativa.trim().toLowerCase()
-          let ini = obj.iniciativas?.find((i) => i.nome_iniciativa.trim().toLowerCase() === iNorm)
-          if (!ini) {
-            ini = await createIniciativa({
-              objetivo_id: obj.id,
-              setor_responsavel: r.setor.trim() || 'ARPE',
-              nome_iniciativa: r.iniciativa.trim(),
-              gestor_responsavel: r.gestor.trim() || 'Gestor do Plano',
-              descricao_resumida: r.descricao.trim() || r.iniciativa.trim(),
-              valor_estimado_total: r.valorTotal.trim() || null,
-              valor_estimado_ano_vigente: r.valor2026.trim() || null,
-            })
-            if (!obj.iniciativas) obj.iniciativas = []
-            obj.iniciativas.push(ini)
-            summary.iniciativas++
-          }
-
-          // 4. KR
-          const kNorm = r.kr.trim().toLowerCase()
-          let kr = ini.key_results?.find((k) => k.nome_kr.trim().toLowerCase() === kNorm)
-          if (!kr) {
-            kr = await createKeyResult({
-              iniciativa_id: ini.id,
-              codigo_kr: `KR-${summary.krs + 1}`,
-              nome_kr: r.kr.trim(),
-              meta_qualitativa_quantitativa: r.krSetor.trim() || '100%',
-            })
-            if (!ini.key_results) ini.key_results = []
-            ini.key_results.push(kr)
-            summary.krs++
-          }
-
-          // 5. Etapa
-          const statusBackend = mapFrontendStatusToBackend(r.status)
-          await createEtapa({
-            key_result_id: kr.id,
-            numero_sequencial: r.numero ?? ((kr.etapas?.length ?? 0) + 1),
-            nome_etapa: r.etapa.trim(),
-            data_inicio_previsto: r.dataInicio,
-            data_termino_previsto: r.dataTermino,
-            responsavel_etapa: r.responsavel.trim(),
-            status: statusBackend,
-          })
-          summary.etapas++
-        }
-
+        const backendRows = importRowsList.map(importRowToBackendPayload)
+        const result = await apiFetch<{
+          perspectivas_created: number
+          objetivos_created: number
+          iniciativas_created: number
+          key_results_created: number
+          etapas_upserted: number
+          etapas_deleted: number
+        }>(API_ENDPOINTS.imports.commit, {
+          method: 'POST',
+          body: JSON.stringify({ rows: backendRows, mode }),
+        })
         await loadPlan(true)
-        return summary
+        return {
+          iniciativas: result.iniciativas_created,
+          krs: result.key_results_created,
+          etapas: result.etapas_upserted,
+        }
       } catch (err: any) {
         toast.error(`Erro ao importar para o backend: ${err.message}`)
         throw err
@@ -540,56 +475,57 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     [loadPlan],
   )
 
-  // Função utilitária para popular o backend com dados padrão de demonstração do plano 2026 caso o banco esteja vazio
+  // --- Seed demo ---
   const seedDemoData = React.useCallback(async () => {
     setLoading(true)
     toast.info('Populando banco de dados no backend com o plano estratégico...')
     try {
       const { PLAN } = await import('@/lib/data')
       for (const iniSeed of PLAN) {
-        const persp = await createStrategicPerspective(iniSeed.strategic_perspective)
-        const obj = await createobjetivo(persp.id, iniSeed.objetivo)
-        const ini = await createIniciativa({
-          objetivo_id: obj.id,
-          setor_responsavel: iniSeed.setor,
-          nome_iniciativa: iniSeed.nome,
-          gestor_responsavel: iniSeed.gestor,
-          descricao_resumida: iniSeed.descricao,
-          valor_estimado_total: iniSeed.valorTotal,
-          valor_estimado_ano_vigente: iniSeed.valor2026,
+        const persp = await createPerspective(iniSeed.strategic_perspective)
+        const obj = await createObjective(persp.id, iniSeed.objetivo)
+        const ini = await createInitiative({
+          strategic_objective_id: obj.id,
+          responsible_sector: iniSeed.setor,
+          name: iniSeed.nome,
+          responsible_manager: iniSeed.gestor,
+          summary: iniSeed.descricao,
+          total_estimated_value: iniSeed.valorTotal,
+          current_year_estimated_value: iniSeed.valor2026,
         })
 
         for (let k = 0; k < iniSeed.krs.length; k++) {
           const krSeed = iniSeed.krs[k]
           const kr = await createKeyResult({
-            iniciativa_id: ini.id,
-            codigo_kr: `KR-${k + 1}`,
-            nome_kr: krSeed.nome,
-            meta_qualitativa_quantitativa: krSeed.setor,
+            initiative_id: ini.id,
+            code: `KR-${k + 1}`,
+            name: krSeed.nome,
+            goal: krSeed.setor,
           })
 
           for (let e = 0; e < krSeed.etapas.length; e++) {
-            const [nome, , responsavel, status, dataInicio, dataTermino, justs] = krSeed.etapas[e]
-            const etapa = await createEtapa({
+            const [nome, , responsavel, status, dataInicio, dataTermino, justs] =
+              krSeed.etapas[e]
+            const etapa = await createStep({
               key_result_id: kr.id,
-              numero_sequencial: e + 1,
-              nome_etapa: nome,
-              data_inicio_previsto: dataInicio,
-              data_termino_previsto: dataTermino,
-              responsavel_etapa: responsavel,
-              status: mapFrontendStatusToBackend(status),
+              sequential_number: e + 1,
+              name: nome,
+              planned_start_date: dataInicio,
+              planned_end_date: dataTermino,
+              responsible: responsavel,
+              status,
             })
 
             if (justs && justs.length > 0) {
               for (const j of justs) {
-                await createJustificativa({
-                  etapa_id: etapa.id,
-                  data_registro: j[0],
-                  acao_corretiva: j[1],
-                  responsavel_acao: j[2],
-                  previsao_solucao: j[3],
-                  sob_governanca_arpe: j[4],
-                  resolvido: j[5],
+                await createDelayJustification({
+                  step_id: etapa.id,
+                  registration_date: j[0],
+                  corrective_action: j[1],
+                  responsible: j[2],
+                  solution_forecast: j[3],
+                  under_arpe_governance: j[4],
+                  resolved: j[5],
                 })
               }
             }
@@ -628,7 +564,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       searching,
       loading,
       error,
-      currentUser,
+      currentUser, // Injetado no value
       reload: () => loadPlan(false),
       seedDemoData,
       addIniciativa,
