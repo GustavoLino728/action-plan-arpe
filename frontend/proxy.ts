@@ -1,29 +1,27 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+const PUBLIC_ROUTES = ['/login', '/register', '/forgot-password']
 
-const PUBLIC_ROUTES = ['/login']
 const COOKIE_NAME = 'arpe_session'
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const hasSession = request.cookies.get(COOKIE_NAME)?.value === '1'
 
-  const isPublic = PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route + '/'),
+  const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+    pathname === route || pathname.startsWith(route + '/'),
   )
 
-  if (hasSession && isPublic) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
+  const hasSession = request.cookies.get(COOKIE_NAME)?.value === '1'
+
+  if (!isPublicRoute && !hasSession) {
+    const loginUrl = new URL('/login', request.url)
+    if (pathname !== '/') loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
-  if (!hasSession && !isPublic) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    if (pathname !== '/') url.searchParams.set('from', pathname)
-    return NextResponse.redirect(url)
+  if (isPublicRoute && hasSession && pathname === '/login') {
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   return NextResponse.next()
@@ -31,6 +29,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next/|__nextjs|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|woff2?)$).*)',
   ],
 }

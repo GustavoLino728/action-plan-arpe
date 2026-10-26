@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { apiFetch, getMe, type UserSession } from '@/lib/api/client'
+import { apiFetch } from '@/lib/api/client'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
 import type { BackendStrategicPerspectiveDTO } from '@/lib/api/dto'
 import { importRowToBackendPayload } from '@/lib/api/import-mappers'
@@ -78,9 +78,7 @@ interface PlanContextValue {
 
   loading: boolean
   error: string | null
-  currentUser: UserSession | null // Mudança: agora pode ser nulo
   reload: () => Promise<void>
-  seedDemoData: () => Promise<void>
 
   addIniciativa: (input: IniciativaInput) => Promise<Iniciativa>
   updateIniciativa: (id: string, input: IniciativaInput) => Promise<void>
@@ -133,7 +131,6 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   const [treeRaw, setTreeRaw] = React.useState<BackendStrategicPerspectiveDTO[]>([])
   const [loading, setLoading] = React.useState<boolean>(true)
   const [error, setError] = React.useState<string | null>(null)
-  const [currentUser, setCurrentUser] = React.useState<UserSession | null>(null)
 
   const [query, setQuery] = React.useState('')
   const [filters, setFilters] = React.useState<Filters>(EMPTY_FILTERS)
@@ -146,16 +143,13 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     if (!silent) setLoading(true)
     setError(null)
     try {
-      const [result, me] = await Promise.all([
-        fetchStrategicMapTree(),
-        getMe().catch(() => null), // Se não tiver token, retorna null
-      ])
+      const result = await fetchStrategicMapTree()
       setData(result.data)
       setTreeRaw(result.treeRaw)
-      if (me) setCurrentUser(me)
     } catch (err: any) {
       console.error('Falha ao sincronizar com backend:', err)
       setError(err.message || 'Falha na conexão com o backend')
+      toast.error(`Falha ao conectar ao backend: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -475,72 +469,6 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     [loadPlan],
   )
 
-  // --- Seed demo ---
-  const seedDemoData = React.useCallback(async () => {
-    setLoading(true)
-    toast.info('Populando banco de dados no backend com o plano estratégico...')
-    try {
-      const { PLAN } = await import('@/lib/data')
-      for (const iniSeed of PLAN) {
-        const persp = await createPerspective(iniSeed.strategic_perspective)
-        const obj = await createObjective(persp.id, iniSeed.objetivo)
-        const ini = await createInitiative({
-          strategic_objective_id: obj.id,
-          responsible_sector: iniSeed.setor,
-          name: iniSeed.nome,
-          responsible_manager: iniSeed.gestor,
-          summary: iniSeed.descricao,
-          total_estimated_value: iniSeed.valorTotal,
-          current_year_estimated_value: iniSeed.valor2026,
-        })
-
-        for (let k = 0; k < iniSeed.krs.length; k++) {
-          const krSeed = iniSeed.krs[k]
-          const kr = await createKeyResult({
-            initiative_id: ini.id,
-            code: `KR-${k + 1}`,
-            name: krSeed.nome,
-            goal: krSeed.setor,
-          })
-
-          for (let e = 0; e < krSeed.etapas.length; e++) {
-            const [nome, , responsavel, status, dataInicio, dataTermino, justs] =
-              krSeed.etapas[e]
-            const etapa = await createStep({
-              key_result_id: kr.id,
-              sequential_number: e + 1,
-              name: nome,
-              planned_start_date: dataInicio,
-              planned_end_date: dataTermino,
-              responsible: responsavel,
-              status,
-            })
-
-            if (justs && justs.length > 0) {
-              for (const j of justs) {
-                await createDelayJustification({
-                  step_id: etapa.id,
-                  registration_date: j[0],
-                  corrective_action: j[1],
-                  responsible: j[2],
-                  solution_forecast: j[3],
-                  under_arpe_governance: j[4],
-                  resolved: j[5],
-                })
-              }
-            }
-          }
-        }
-      }
-      await loadPlan(true)
-      toast.success('Plano padrão populado no banco de dados com sucesso!')
-    } catch (err: any) {
-      toast.error(`Falha ao carregar dados padrão: ${err.message}`)
-    } finally {
-      setLoading(false)
-    }
-  }, [loadPlan])
-
   const value = React.useMemo<PlanContextValue>(
     () => ({
       iniciativas,
@@ -564,9 +492,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       searching,
       loading,
       error,
-      currentUser, // Injetado no value
       reload: () => loadPlan(false),
-      seedDemoData,
       addIniciativa,
       updateIniciativa,
       deleteIniciativa,
@@ -615,9 +541,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       searching,
       loading,
       error,
-      currentUser,
       loadPlan,
-      seedDemoData,
       addIniciativa,
       updateIniciativa,
       deleteIniciativa,
