@@ -209,7 +209,6 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
 
   const resetFilters = React.useCallback(() => setFilters(EMPTY_FILTERS), [])
 
-  // --- Iniciativa ---
   const addIniciativa = React.useCallback(
     async (input: IniciativaInput): Promise<Iniciativa> => {
       try {
@@ -270,7 +269,6 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     toast.info('Iniciativa removida da visão local. (Backend não expõe DELETE /initiatives/{id}).')
   }, [])
 
-  // --- Key Result ---
   const addKr = React.useCallback(
     async (input: KRInput): Promise<KR> => {
       try {
@@ -309,7 +307,6 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     toast.info('KR removido da visão local. (Backend não expõe DELETE /key-results/{id}).')
   }, [])
 
-  // --- Etapa ---
   const addEtapa = React.useCallback(
     async (input: EtapaInput): Promise<Etapa> => {
       try {
@@ -395,7 +392,6 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     }))
   }, [])
 
-  // --- Justificativa ---
   const addJustificativa = React.useCallback(
     async (etapaId: string, input: JustificativaInput) => {
       try {
@@ -436,7 +432,6 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     toast.info('Justificativa removida da visão local. (Backend não expõe DELETE /delay-justifications/{id}).')
   }, [])
 
-  // --- Import em lote ---
   const importRows = React.useCallback(
     async (importRowsList: ImportRow[], mode: 'append' | 'replace'): Promise<ImportSummary> => {
       setLoading(true)

@@ -1,4 +1,3 @@
-// components/upload-launcher.tsx
 'use client'
 
 import { UploadIcon } from 'lucide-react'

@@ -1,4 +1,3 @@
-// components/button.tsx
 'use client'
 
 import * as React from 'react'

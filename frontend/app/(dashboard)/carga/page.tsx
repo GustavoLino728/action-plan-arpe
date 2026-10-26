@@ -1,4 +1,3 @@
-// app/(dashboard)/carga/page.tsx
 export const dynamic = 'force-dynamic'
 
 import { PageTitle } from '@/components/page-title'

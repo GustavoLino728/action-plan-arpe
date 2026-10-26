@@ -1,4 +1,3 @@
-// components/etapa-row.tsx
 'use client'
 
 import * as React from 'react'

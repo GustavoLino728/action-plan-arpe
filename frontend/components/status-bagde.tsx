@@ -1,4 +1,3 @@
-// components/status-badge.tsx
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { STATUS_META, TONE_CLASSES, type Tone } from '@/lib/plan-utils'

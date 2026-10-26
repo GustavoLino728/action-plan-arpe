@@ -1,4 +1,3 @@
-// components/filters-bar.tsx
 'use client'
 
 import { FilterXIcon } from 'lucide-react'

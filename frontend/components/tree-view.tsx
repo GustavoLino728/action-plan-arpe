@@ -1,4 +1,3 @@
-// components/tree-view.tsx
 'use client'
 
 import { ArrowUpRightIcon, ChevronsDownUpIcon, ChevronsUpDownIcon, SearchXIcon, UserIcon } from 'lucide-react'

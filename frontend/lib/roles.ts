@@ -1,4 +1,3 @@
-// lib/roles.ts
 export type Role = 'admin' | 'coordenador' | 'servidor' | string
 
 export function podeVerCarga(role?: string | null): boolean {

@@ -34,7 +34,6 @@ export default function LoginPage() {
     setMounted(true);
   }, []);
 
-  // Redirect se já autenticado
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
       router.replace(redirectTo);

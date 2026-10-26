@@ -1,4 +1,3 @@
-// components/upload-dropzone.tsx
 'use client'
 
 import { FileSpreadsheetIcon, UploadCloudIcon } from 'lucide-react'

@@ -1,4 +1,3 @@
-// components/progress-bar.tsx
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { TONE_BAR, type Tone } from '@/lib/plan-utils'

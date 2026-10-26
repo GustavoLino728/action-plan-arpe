@@ -1,4 +1,3 @@
-// components/kpi-cards.tsx
 'use client'
 
 import { AlertTriangleIcon, CheckCircle2Icon, ClockIcon, GaugeIcon, TargetIcon } from 'lucide-react'
