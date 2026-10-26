@@ -3,26 +3,27 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-# Chaves em inglês — casam 1:1 com o que o frontend envia
-REQUIRED_FIELDS = [
-    "perspective", "objective", "responsible_sector", "initiative_name",
-    "responsible_manager", "summary",
-    "kr_code", "kr_name", "kr_goal",
-    "sequential_number", "step_name",
-    "planned_start_date", "planned_end_date",
-    "responsible", "status",
-]
 
-
-class ImportPreviewRequest(BaseModel):
-    grid: list[list[Any]]
-    mapping: dict[str, int]
+class ImportPreviewResponse(BaseModel):
+    valid_rows: list["ValidatedRow"]
+    issues: list["ImportIssue"]
+    summary: dict[str, Any]
 
 
 class ImportIssue(BaseModel):
     line: int
     field: str | None = None
     message: str
+
+
+class JustificativaData(BaseModel):
+    problema: str
+    data_registro: date | None = None
+    acao_corretiva: str = ""
+    responsavel: str = ""
+    previsao_solucao: date | None = None
+    sob_governanca_arpe: bool = False
+    resolvido: bool = False
 
 
 class ValidatedRow(BaseModel):
@@ -45,12 +46,7 @@ class ValidatedRow(BaseModel):
     actual_end_date: date | None = None
     responsible: str
     status: str
-
-
-class ImportPreviewResponse(BaseModel):
-    valid_rows: list[ValidatedRow]
-    issues: list[ImportIssue]
-    summary: dict[str, int]
+    justificativas: list[JustificativaData] = []
 
 
 class ImportCommitRequest(BaseModel):
@@ -65,3 +61,4 @@ class ImportCommitResponse(BaseModel):
     key_results_created: int
     steps_upserted: int
     steps_deleted: int
+    justificativas_upserted: int
