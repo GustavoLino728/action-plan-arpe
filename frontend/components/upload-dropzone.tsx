@@ -6,7 +6,7 @@ import { Button } from '@/components/button'
 import { Spinner } from '@/components/spinner'
 import { cn } from '@/lib/utils'
 
-const ACCEPTED = ['.xlsx', '.csv']
+const ACCEPTED = ['.xlsx']
 
 export function UploadDropzone({
   onFile,
@@ -15,7 +15,7 @@ export function UploadDropzone({
   error,
 }: {
   onFile: (file: File) => void
-  onSample: () => void
+  onSample?: () => void   // ← opcional agora
   loading: boolean
   error: string | null
 }) {
@@ -30,9 +30,16 @@ export function UploadDropzone({
   return (
     <div className="flex flex-col gap-3">
       <div
-        onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragging(true)
+        }}
         onDragLeave={() => setDragging(false)}
-        onDrop={(e) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files) }}
+        onDrop={(e) => {
+          e.preventDefault()
+          setDragging(false)
+          handleFiles(e.dataTransfer.files)
+        }}
         className={cn(
           'flex flex-col items-center gap-3 rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors',
           dragging ? 'border-teal bg-teal/5' : 'border-line bg-line/5',
@@ -43,7 +50,10 @@ export function UploadDropzone({
         </span>
         <div className="flex flex-col gap-1">
           <p className="font-medium text-ink">Arraste a planilha aqui</p>
-          <p className="text-sm text-ink-soft">Formatos aceitos: .xlsx e .csv. A primeira linha deve conter os cabeçalhos.</p>
+          <p className="text-sm text-ink-soft">
+            Formato aceito: <strong>.xlsx</strong>. Cada aba <strong>PA XX</strong> é processada
+            como uma iniciativa; a aba <strong>Mapa Estratégico</strong> é ignorada.
+          </p>
         </div>
         <input
           ref={inputRef}
@@ -52,16 +62,21 @@ export function UploadDropzone({
           className="sr-only"
           tabIndex={-1}
           aria-label="Selecionar arquivo de planilha"
-          onChange={(e) => { handleFiles(e.target.files); e.target.value = '' }}
+          onChange={(e) => {
+            handleFiles(e.target.files)
+            e.target.value = ''
+          }}
         />
         <div className="flex flex-wrap justify-center gap-2">
           <Button onClick={() => inputRef.current?.click()} disabled={loading}>
             Selecionar arquivo
           </Button>
-          <Button variant="outline" onClick={onSample} disabled={loading}>
-            <FileSpreadsheetIcon className="size-4" />
-            Usar planilha de exemplo
-          </Button>
+          {onSample && (
+            <Button variant="outline" onClick={onSample} disabled={loading}>
+              <FileSpreadsheetIcon className="size-4" />
+              Usar planilha de exemplo
+            </Button>
+          )}
         </div>
       </div>
       {error && (
