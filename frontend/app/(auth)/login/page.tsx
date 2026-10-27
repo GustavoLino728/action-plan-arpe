@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { useTheme } from "@/components/theme-provider";
@@ -15,10 +15,14 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-export default function LoginPage() {
+/**
+ * Componente interno que usa useSearchParams.
+ * É ele que precisa estar dentro do <Suspense>.
+ */
+function LoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') || '/'
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/";
 
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -38,7 +42,7 @@ export default function LoginPage() {
     if (!authLoading && isAuthenticated) {
       router.replace(redirectTo);
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router, redirectTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -248,5 +252,17 @@ export default function LoginPage() {
         © 2026 ARPE — Agência de Regulação de Pernambuco
       </p>
     </div>
+  );
+}
+
+/**
+ * Exportação padrão da página.
+ * O <Suspense> resolve o erro de prerender no build.
+ */
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
