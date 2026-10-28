@@ -49,7 +49,7 @@ export function Dialog({
       onClick={(e) => {
         if (e.target === dialogRef.current) onOpenChange(false)
       }}
-      className="rounded-lg border border-line bg-panel text-ink shadow-xl p-0 backdrop:bg-black/50"
+      className="m-auto rounded-lg border border-line bg-panel text-ink shadow-xl p-0 backdrop:bg-black/50"
     >
       <DialogContext.Provider value={{ open, onOpenChange }}>
         {children}
