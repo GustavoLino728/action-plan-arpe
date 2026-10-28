@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useDashboard } from '@/components/dashboard-provider'
 import { useAuth } from '@/components/auth-provider'
 import { podeVerCarga } from '@/lib/roles'
-import { BarChart3, FileText, LineChart, Upload, X } from 'lucide-react'
+import { BarChart3, FileText, LineChart, Upload, User, X } from 'lucide-react'
 
 type NavItem = {
   name: string
@@ -18,6 +18,7 @@ const navItems: NavItem[] = [
   { name: 'Mapa Estratégico', href: '/', icon: BarChart3 },
   { name: 'Planos de Ação', href: '/planos', icon: FileText },
   { name: 'Relatórios', href: '/relatorios', icon: LineChart },
+  { name: 'Usuários', href: '/usuarios', icon: User},
   { name: 'Carga de Planilhas', href: '/carga', icon: Upload, visivel: podeVerCarga },
 ]
 

@@ -102,3 +102,52 @@ export async function createDelayJustification(payload: {
     body: JSON.stringify(payload),
   })
 }
+
+export interface ApiUser {
+  id: string
+  name: string
+  email: string
+  role: string
+  department: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ApiUserCreate {
+  name: string
+  email: string
+  password: string
+  role: string
+  department: string | null
+}
+
+export interface ApiUserUpdate {
+  name?: string
+  role?: string
+  is_active?: boolean
+  department?: string | null
+  password?: string
+}
+
+export async function fetchUsers(): Promise<ApiUser[]> {
+  return apiFetch<ApiUser[]>('/api/v1/users/')
+}
+
+export async function createUser(payload: ApiUserCreate): Promise<ApiUser> {
+  return apiFetch<ApiUser>('/api/v1/users/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function updateUser(id: string, payload: ApiUserUpdate): Promise<ApiUser> {
+  return apiFetch<ApiUser>(`/api/v1/users/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteUser(id: string): Promise<void> {
+  await apiFetch<void>(`/api/v1/users/${id}`, { method: 'DELETE' })
+}

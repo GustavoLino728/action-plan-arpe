@@ -3,15 +3,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/components/auth-provider";
 import {
-  fetchUsers,
-  createUser,
-  updateUser,
+  fetchUsers, 
+  createUser, 
+  updateUser, 
   deleteUser,
-  ApiUser,
-  ApiUserCreate,
-  ApiUserUpdate,
-  ApiError,
-} from "@/lib/api";
+  type ApiUser,
+  type ApiUserCreate,
+  type ApiUserUpdate,
+} from "@/lib/api/services";
 import {
   Users,
   UserPlus,

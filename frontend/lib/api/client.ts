@@ -14,6 +14,7 @@ export interface UserSession {
   name: string
   email: string
   role: string
+  roleLabel: string
   department: string | null
   initials: string
 }
@@ -102,7 +103,13 @@ export async function getMe(): Promise<UserSession> {
     id: data.id,
     name: data.name,
     email: data.email,
-    role: data.role === 'admin' ? 'Administrador' : data.role === 'coordenador' ? 'Coordenador' : 'Servidor',
+    role: data.role,
+    roleLabel:
+      data.role === 'admin'
+        ? 'Administrador'
+        : data.role === 'coordenador'
+          ? 'Coordenador'
+          : 'Servidor',
     department: data.department || 'ARPE',
     initials: getInitials(data.name),
   }
