@@ -12,7 +12,7 @@
   },
   "rewrites": [
     {
-      "source": "/app/(.*)",
+      "source": "/api/(.*)",
       "destination": {
         "service": "backend"
       }
