@@ -137,17 +137,6 @@ export async function deleteUser(id: string): Promise<void> {
   await apiFetch<void>(`/api/v1/users/${id}`, { method: 'DELETE' })
 }
 
-export interface BackendDelayJustificationDTO {
-  id: string
-  step_id: string
-  registration_date: string
-  corrective_action: string
-  responsible: string
-  solution_forecast: string
-  under_arpe_governance: boolean
-  resolved: boolean
-}
-
 export async function createDelayJustification(payload: {
   step_id: string
   registration_date: string
