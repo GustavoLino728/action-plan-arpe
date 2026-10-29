@@ -17,6 +17,15 @@ class StrategicInitiativeCreate(StrategicInitiativeBase):
     strategic_objective_id: UUID
 
 
+class StrategicInitiativeUpdate(BaseModel):
+    responsible_sector: str | None = None
+    name: str | None = None
+    responsible_manager: str | None = None
+    summary: str | None = None
+    total_estimated_value: str | None = None
+    current_year_estimated_value: str | None = None
+
+
 class StrategicInitiativeRead(StrategicInitiativeBase):
     id: UUID
     strategic_objective_id: UUID

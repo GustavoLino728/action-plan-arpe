@@ -188,3 +188,61 @@ export async function deleteDelayJustification(id: string): Promise<void> {
     method: 'DELETE',
   })
 }
+
+export async function updateInitiative(
+  id: string,
+  payload: Partial<{
+    responsible_sector: string
+    name: string
+    responsible_manager: string
+    summary: string
+    total_estimated_value: string | null
+    current_year_estimated_value: string | null
+  }>,
+): Promise<BackendInitiativeDTO> {
+  return apiFetch<BackendInitiativeDTO>(`/api/v1/initiatives/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteInitiative(id: string): Promise<void> {
+  await apiFetch<void>(`/api/v1/initiatives/${id}`, { method: 'DELETE' })
+}
+
+export async function updateKeyResult(
+  id: string,
+  payload: Partial<{ code: string; name: string; goal: string }>,
+): Promise<BackendKeyResultDTO> {
+  return apiFetch<BackendKeyResultDTO>(`/api/v1/key-results/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteKeyResult(id: string): Promise<void> {
+  await apiFetch<void>(`/api/v1/key-results/${id}`, { method: 'DELETE' })
+}
+
+export async function updateStep(
+  id: string,
+  payload: Partial<{
+    sequential_number: number
+    name: string
+    planned_start_date: string
+    planned_end_date: string
+    actual_start_date: string | null
+    actual_end_date: string | null
+    responsible: string
+    status: string
+  }>,
+): Promise<BackendActionPlanStepDTO> {
+  return apiFetch<BackendActionPlanStepDTO>(`/api/v1/steps/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteStep(id: string): Promise<void> {
+  await apiFetch<void>(`/api/v1/steps/${id}`, { method: 'DELETE' })
+}

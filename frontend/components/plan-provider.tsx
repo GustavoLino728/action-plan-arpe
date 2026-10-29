@@ -4,6 +4,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 
 import { apiFetch } from '@/lib/api/client'
+import { toBackendStatus } from '@/lib/api/mappers'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
 import type { BackendStrategicPerspectiveDTO } from '@/lib/api/dto'
 import { importRowToBackendPayload } from '@/lib/api/import-mappers'
@@ -12,10 +13,16 @@ import {
   deleteDelayJustification,
   updateDelayJustification,
   createInitiative,
+  updateInitiative,
+  deleteInitiative,
   createKeyResult,
+  updateKeyResult,
+  deleteKeyResult,
   createObjective,
   createPerspective,
   createStep,
+  updateStep,
+  deleteStep,
   fetchStrategicMapTree,
   updateStepStatus,
 } from '@/lib/api/services'
@@ -248,28 +255,41 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     [treeRaw, loadPlan],
   )
 
-  const updateIniciativa = React.useCallback(async (id: string, input: IniciativaInput) => {
-    setData((d) => ({
-      ...d,
-      iniciativas: d.iniciativas.map((i) => (i.id === id ? { ...input, id } : i)),
-    }))
-    toast.info('Iniciativa atualizada na visão local. (Backend não expõe PUT /initiatives/{id}).')
-  }, [])
-
-  const deleteIniciativa = React.useCallback(async (id: string) => {
-    setData((d) => {
-      const krIds = new Set(d.krs.filter((k) => k.iniciativaId === id).map((k) => k.id))
-      const etapaIds = new Set(d.etapas.filter((e) => krIds.has(e.krId)).map((e) => e.id))
-      return {
-        iniciativas: d.iniciativas.filter((i) => i.id !== id),
-        krs: d.krs.filter((k) => !krIds.has(k.id)),
-        etapas: d.etapas.filter((e) => !etapaIds.has(e.id)),
-        justificativas: d.justificativas.filter((j) => !etapaIds.has(j.etapaId)),
+  const updateIniciativa = React.useCallback(
+    async (id: string, input: IniciativaInput) => {
+      try {
+        await updateInitiative(id, {
+          responsible_sector: input.setor.trim(),
+          name: input.nome.trim(),
+          responsible_manager: input.gestor.trim(),
+          summary: input.descricao.trim(),
+          total_estimated_value: input.valorTotal.trim() || null,
+          current_year_estimated_value: input.valor2026.trim() || null,
+        })
+        await loadPlan(true)
+        toast.success('Iniciativa atualizada.')
+      } catch (err: any) {
+        toast.error(`Erro ao atualizar iniciativa: ${err.message}`)
+        throw err
       }
-    })
-    setDrawer((s) => (s.open ? { open: false } : s))
-    toast.info('Iniciativa removida da visão local. (Backend não expõe DELETE /initiatives/{id}).')
-  }, [])
+    },
+    [loadPlan],
+  )
+
+  const deleteIniciativa = React.useCallback(
+    async (id: string) => {
+      try {
+        await deleteIniciativa(id)
+        await loadPlan(true)
+        setDrawer((s) => (s.open ? { open: false } : s))
+        toast.success('Iniciativa removida.')
+      } catch (err: any) {
+        toast.error(`Erro ao remover iniciativa: ${err.message}`)
+        throw err
+      }
+    },
+    [loadPlan],
+  )
 
   const addKr = React.useCallback(
     async (input: KRInput): Promise<KR> => {
@@ -290,24 +310,37 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     [loadPlan],
   )
 
-  const updateKr = React.useCallback(async (id: string, input: KRInput) => {
-    setData((d) => ({ ...d, krs: d.krs.map((k) => (k.id === id ? { ...input, id } : k)) }))
-    toast.info('KR atualizado na visão local. (Backend não expõe PUT /key-results/{id}).')
-  }, [])
-
-  const deleteKr = React.useCallback(async (id: string) => {
-    setData((d) => {
-      const etapaIds = new Set(d.etapas.filter((e) => e.krId === id).map((e) => e.id))
-      return {
-        ...d,
-        krs: d.krs.filter((k) => k.id !== id),
-        etapas: d.etapas.filter((e) => e.krId !== id),
-        justificativas: d.justificativas.filter((j) => !etapaIds.has(j.etapaId)),
+  const updateKr = React.useCallback(
+    async (id: string, input: KRInput) => {
+      try {
+        await updateKeyResult(id, {
+          name: input.nome.trim(),
+          goal: input.setor.trim() || 'Meta 2026',
+        })
+        await loadPlan(true)
+        toast.success('KR atualizado.')
+      } catch (err: any) {
+        toast.error(`Erro ao atualizar KR: ${err.message}`)
+        throw err
       }
-    })
-    setDrawer((s) => (s.open ? { open: false } : s))
-    toast.info('KR removido da visão local. (Backend não expõe DELETE /key-results/{id}).')
-  }, [])
+    },
+    [loadPlan],
+  )
+
+  const deleteKr = React.useCallback(
+    async (id: string) => {
+      try {
+        await deleteKeyResult(id)
+        await loadPlan(true)
+        setDrawer((s) => (s.open ? { open: false } : s))
+        toast.success('KR removido.')
+      } catch (err: any) {
+        toast.error(`Erro ao remover KR: ${err.message}`)
+        throw err
+      }
+    },
+    [loadPlan],
+  )
 
   const addEtapa = React.useCallback(
     async (input: EtapaInput): Promise<Etapa> => {
@@ -337,53 +370,44 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
 
   const updateEtapa = React.useCallback(
     async (id: string, input: EtapaInput) => {
-      const previous = data.etapas.find((e) => e.id === id)
-      const statusChanged = previous && previous.status !== input.status
-
-      if (statusChanged) {
-        try {
-          await updateStepStatus(id, {
-            status: input.status,
-            actual_start_date:
-              input.status === 'concluido' ? new Date().toISOString().slice(0, 10) : null,
-            actual_end_date:
-              input.status === 'concluido' ? new Date().toISOString().slice(0, 10) : null,
-          })
-          await loadPlan(true)
-          toast.success(`Status da etapa atualizado para "${input.status}" no backend.`)
-          return
-        } catch (err: any) {
-          toast.error(`Erro ao atualizar status no backend: ${err.message}`)
-        }
+      try {
+        await updateStep(id, {
+          name: input.nome.trim(),
+          planned_start_date: input.dataInicio,
+          planned_end_date: input.dataTermino,
+          responsible: input.responsavel.trim(),
+          status: toBackendStatus(input.status),
+          actual_start_date:
+            input.status === 'concluido' ? new Date().toISOString().slice(0, 10) : null,
+          actual_end_date:
+            input.status === 'concluido' ? new Date().toISOString().slice(0, 10) : null,
+        })
+        await loadPlan(true)
+        toast.success('Etapa atualizada.')
+      } catch (err: any) {
+        toast.error(`Erro ao atualizar etapa: ${err.message}`)
+        throw err
       }
-
-      setData((d) => ({
-        ...d,
-        etapas: d.etapas.map((e) => {
-          if (e.id !== id) return e
-          const log = [...e.log]
-          if (e.realizado !== input.realizado) {
-            log.unshift(
-              newLog('comentario', `Realizado atualizado de ${e.realizado}% para ${input.realizado}%.`),
-            )
-          }
-          return { ...input, id, log }
-        }),
-      }))
-      toast.info('Etapa atualizada na visão local. (Backend dispõe de PATCH /steps/{id}/status; falta endpoint para outros campos).')
     },
-    [data.etapas, loadPlan],
+    [loadPlan],
   )
 
-  const deleteEtapa = React.useCallback(async (id: string) => {
-    setData((d) => ({
-      ...d,
-      etapas: d.etapas.filter((e) => e.id !== id),
-      justificativas: d.justificativas.filter((j) => j.etapaId !== id),
-    }))
-    setDrawer((s) => (s.open && s.mode !== 'create' && s.id === id ? { open: false } : s))
-    toast.info('Etapa removida da visão local. (Backend não expõe DELETE /steps/{id}).')
-  }, [])
+  const deleteEtapa = React.useCallback(
+    async (id: string) => {
+      try {
+        await deleteStep(id)
+        await loadPlan(true)
+        setDrawer((s) =>
+          s.open && s.mode !== 'create' && s.id === id ? { open: false } : s,
+        )
+        toast.success('Etapa removida.')
+      } catch (err: any) {
+        toast.error(`Erro ao remover etapa: ${err.message}`)
+        throw err
+      }
+    },
+    [loadPlan],
+  )
 
   const addLog = React.useCallback((etapaId: string, text: string) => {
     setData((d) => ({

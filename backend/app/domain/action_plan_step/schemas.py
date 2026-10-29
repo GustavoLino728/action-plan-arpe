@@ -21,6 +21,15 @@ class ActionPlanStepBase(BaseModel):
 class ActionPlanStepCreate(ActionPlanStepBase):
     key_result_id: UUID
 
+class ActionPlanStepUpdate(BaseModel):
+    sequential_number: int | None = None
+    name: str | None = None
+    planned_start_date: date | None = None
+    planned_end_date: date | None = None
+    actual_start_date: date | None = None
+    actual_end_date: date | None = None
+    responsible: str | None = None
+    status: StepStatus | None = None
 
 class ActionPlanStepUpdateStatus(BaseModel):
     status: StepStatus

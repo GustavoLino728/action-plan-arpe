@@ -46,3 +46,27 @@ async def update_step_status(
     await db.commit()
     await db.refresh(step)
     return step
+
+@router.patch(
+    "/{step_id}",
+    response_model=schemas.ActionPlanStepRead,
+)
+async def update_step(
+    step_id: UUID,
+    payload: schemas.ActionPlanStepUpdate,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    step = await services.update_step(db, step_id, payload)
+    await db.commit()
+    return step
+
+
+@router.delete("/{step_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_step(
+    step_id: UUID,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    await services.delete_step(db, step_id)
+    await db.commit()

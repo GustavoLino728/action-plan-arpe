@@ -12,6 +12,10 @@ class KeyResultBase(BaseModel):
 class KeyResultCreate(KeyResultBase):
     initiative_id: UUID
 
+class KeyResultUpdate(BaseModel):
+    code: str | None = None
+    name: str | None = None
+    goal: str | None = None
 
 class KeyResultRead(KeyResultBase):
     id: UUID
