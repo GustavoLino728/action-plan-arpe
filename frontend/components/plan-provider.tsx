@@ -9,6 +9,8 @@ import type { BackendStrategicPerspectiveDTO } from '@/lib/api/dto'
 import { importRowToBackendPayload } from '@/lib/api/import-mappers'
 import {
   createDelayJustification,
+  deleteDelayJustification,
+  updateDelayJustification,
   createInitiative,
   createKeyResult,
   createObjective,
@@ -394,6 +396,14 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
 
   const addJustificativa = React.useCallback(
     async (etapaId: string, input: JustificativaInput) => {
+      if (!input.previsaoSolucao) {
+        toast.error('Previsão de solução é obrigatória.')
+        return
+      }
+      if (!input.acaoCorretiva.trim()) {
+        toast.error('Ação corretiva é obrigatória.')
+        return
+      }
       try {
         await createDelayJustification({
           step_id: etapaId,
@@ -407,30 +417,54 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
         await loadPlan(true)
         toast.success('Justificativa registrada no backend com sucesso.')
       } catch (err: any) {
-        toast.error(`Erro ao registrar justificativa no backend: ${err.message}`)
+        toast.error(`Erro ao registrar justificativa: ${err.message}`)
+      }
+    },
+    [loadPlan],
+  )
+
+  const updateJustificativa = React.useCallback(
+    async (id: string, input: JustificativaInput) => {
+      try {
+        await updateDelayJustification(id, {
+          registration_date: input.dataRegistro,
+          corrective_action: input.acaoCorretiva.trim(),
+          responsible: input.responsavel.trim(),
+          solution_forecast: input.previsaoSolucao,
+          under_arpe_governance: input.sobGovernanca,
+          resolved: input.resolvido,
+        })
+        await loadPlan(true)
+        toast.success('Justificativa atualizada.')
+      } catch (err: any) {
+        toast.error(`Erro ao atualizar justificativa: ${err.message}`)
         setData((d) => ({
           ...d,
-          justificativas: [{ ...input, id: uid('jus'), etapaId }, ...d.justificativas],
+          justificativas: d.justificativas.map((j) =>
+            j.id === id ? { ...input, id, etapaId: j.etapaId } : j,
+          ),
         }))
       }
     },
     [loadPlan],
   )
 
-  const updateJustificativa = React.useCallback(async (id: string, input: JustificativaInput) => {
-    setData((d) => ({
-      ...d,
-      justificativas: d.justificativas.map((j) =>
-        j.id === id ? { ...input, id, etapaId: j.etapaId } : j,
-      ),
-    }))
-    toast.info('Justificativa atualizada localmente. (Backend ainda não expõe endpoint para editar/resolver justificativa).')
-  }, [])
-
-  const deleteJustificativa = React.useCallback(async (id: string) => {
-    setData((d) => ({ ...d, justificativas: d.justificativas.filter((j) => j.id !== id) }))
-    toast.info('Justificativa removida da visão local. (Backend não expõe DELETE /delay-justifications/{id}).')
-  }, [])
+  const deleteJustificativa = React.useCallback(
+    async (id: string) => {
+      try {
+        await deleteDelayJustification(id)
+        await loadPlan(true)
+        toast.success('Justificativa removida.')
+      } catch (err: any) {
+        toast.error(`Erro ao remover justificativa: ${err.message}`)
+        setData((d) => ({
+          ...d,
+          justificativas: d.justificativas.filter((j) => j.id !== id),
+        }))
+      }
+    },
+    [loadPlan],
+  )
 
   const importRows = React.useCallback(
     async (importRowsList: ImportRow[], mode: 'append' | 'replace'): Promise<ImportSummary> => {

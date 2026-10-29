@@ -88,21 +88,6 @@ export async function updateStepStatus(
   })
 }
 
-export async function createDelayJustification(payload: {
-  step_id: string
-  registration_date: string
-  corrective_action: string
-  responsible: string
-  solution_forecast: string
-  under_arpe_governance: boolean
-  resolved?: boolean
-}): Promise<BackendDelayJustificationDTO> {
-  return apiFetch(API_ENDPOINTS.justifications + '/', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
-}
-
 export interface ApiUser {
   id: string
   name: string
@@ -150,4 +135,56 @@ export async function updateUser(id: string, payload: ApiUserUpdate): Promise<Ap
 
 export async function deleteUser(id: string): Promise<void> {
   await apiFetch<void>(`/api/v1/users/${id}`, { method: 'DELETE' })
+}
+
+export interface BackendDelayJustificationDTO {
+  id: string
+  step_id: string
+  registration_date: string
+  corrective_action: string
+  responsible: string
+  solution_forecast: string
+  under_arpe_governance: boolean
+  resolved: boolean
+}
+
+export async function createDelayJustification(payload: {
+  step_id: string
+  registration_date: string
+  corrective_action: string
+  responsible: string
+  solution_forecast: string
+  under_arpe_governance: boolean
+  resolved: boolean
+}): Promise<BackendDelayJustificationDTO> {
+  return apiFetch<BackendDelayJustificationDTO>('/api/v1/delay-justifications/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function updateDelayJustification(
+  id: string,
+  payload: Partial<{
+    registration_date: string
+    corrective_action: string
+    responsible: string
+    solution_forecast: string
+    under_arpe_governance: boolean
+    resolved: boolean
+  }>,
+): Promise<BackendDelayJustificationDTO> {
+  return apiFetch<BackendDelayJustificationDTO>(
+    `/api/v1/delay-justifications/${id}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    },
+  )
+}
+
+export async function deleteDelayJustification(id: string): Promise<void> {
+  await apiFetch<void>(`/api/v1/delay-justifications/${id}`, {
+    method: 'DELETE',
+  })
 }

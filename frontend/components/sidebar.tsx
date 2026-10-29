@@ -17,7 +17,6 @@ type NavItem = {
 const navItems: NavItem[] = [
   { name: 'Mapa Estratégico', href: '/', icon: BarChart3 },
   { name: 'Planos de Ação', href: '/planos', icon: FileText },
-  { name: 'Relatórios', href: '/relatorios', icon: LineChart },
   { name: 'Usuários', href: '/usuarios', icon: User},
   { name: 'Carga de Planilhas', href: '/carga', icon: Upload, visivel: podeVerCarga },
 ]

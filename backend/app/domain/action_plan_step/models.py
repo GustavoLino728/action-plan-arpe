@@ -47,6 +47,8 @@ class ActionPlanStep(Base, TimestampMixin):
 
     key_result: Mapped["KeyResult"] = relationship(back_populates="steps")
 
-    delay_justification: Mapped[Optional["DelayJustification"]] = relationship(
-        back_populates="step", uselist=False, cascade="all, delete-orphan"
+    delay_justifications: Mapped[list["DelayJustification"]] = relationship(
+        back_populates="step",
+        cascade="all, delete-orphan",
+        order_by="DelayJustification.created_at",
     )

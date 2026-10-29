@@ -390,6 +390,10 @@ function JustificativasTab({ etapa }: { etapa: Etapa }) {
       toast.error('Descreva a ação corretiva.')
       return
     }
+    if (!form.previsaoSolucao) {
+      toast.error('Informe a previsão de solução.')
+      return
+    }
     try {
       await addJustificativa(etapa.id, form)
       toast.success('Justificativa registrada.')
@@ -488,6 +492,7 @@ function JustificativasTab({ etapa }: { etapa: Etapa }) {
                 className={inputCls}
                 value={form.previsaoSolucao}
                 onChange={(e) => setForm((f) => ({ ...f, previsaoSolucao: e.target.value }))}
+                required
               />
             </div>
             <div className="flex items-center gap-2 pt-6">

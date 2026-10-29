@@ -56,6 +56,8 @@ _STATUS_MAP = {
     "in progress": "In Progress",
     "concluido": "Completed",
     "concluído": "Completed",
+    "concluida": "Completed",
+    "concluída": "Completed",
     "completed": "Completed",
     "atrasado": "Delayed",
     "delayed": "Delayed",

@@ -24,7 +24,7 @@ async def get_strategic_map_tree(db: DBSession, current_user: CurrentUser):
             .selectinload(StrategicObjective.initiatives)
             .selectinload(StrategicInitiative.key_results)
             .selectinload(KeyResult.steps)
-            .selectinload(ActionPlanStep.delay_justification)
+            .selectinload(ActionPlanStep.delay_justifications)
         )
     )
     result = await db.execute(stmt)

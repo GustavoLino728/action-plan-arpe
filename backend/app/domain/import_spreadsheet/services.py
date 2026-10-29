@@ -157,37 +157,38 @@ async def commit_import(
 
         counts["steps_upserted"] += 1
 
-        # ─── Justificativa (atualmente 1:1 — usa a primeira) ───
-        # TODO: mudar para 1:N quando o modelo DelayJustification for ajustado.
         if row.justificativas:
-            jdata = row.justificativas[0]
-            existing_just = (
+            existing = (
                 await db.execute(
                     select(DelayJustification).where(
                         DelayJustification.step_id == step.id
                     )
                 )
-            ).scalar_one_or_none()
+            ).scalars().all()
+            existing_by_date = {j.registration_date: j for j in existing}
 
-            if existing_just:
-                existing_just.registration_date = jdata.data_registro or date.today()
-                existing_just.corrective_action = jdata.acao_corretiva or jdata.problema
-                existing_just.responsible = jdata.responsavel or row.responsible
-                existing_just.solution_forecast = jdata.previsao_solucao or date.today()
-                existing_just.under_arpe_governance = jdata.sob_governanca_arpe
-                existing_just.resolved = jdata.resolvido
-            else:
-                db.add(
-                    DelayJustification(
-                        step_id=step.id,
-                        registration_date=jdata.data_registro or date.today(),
-                        corrective_action=jdata.acao_corretiva or jdata.problema,
-                        responsible=jdata.responsavel or row.responsible,
-                        solution_forecast=jdata.previsao_solucao or date.today(),
-                        under_arpe_governance=jdata.sob_governanca_arpe,
-                        resolved=jdata.resolvido,
+            for jdata in row.justificativas:
+                reg_date = jdata.data_registro or date.today()
+                found = existing_by_date.get(reg_date)
+
+                if found:
+                    found.corrective_action = jdata.acao_corretiva or jdata.problema
+                    found.responsible = jdata.responsavel or row.responsible
+                    found.solution_forecast = jdata.previsao_solucao or date.today()
+                    found.under_arpe_governance = jdata.sob_governanca_arpe
+                    found.resolved = jdata.resolvido
+                else:
+                    db.add(
+                        DelayJustification(
+                            step_id=step.id,
+                            registration_date=reg_date,
+                            corrective_action=jdata.acao_corretiva or jdata.problema,
+                            responsible=jdata.responsavel or row.responsible,
+                            solution_forecast=jdata.previsao_solucao or date.today(),
+                            under_arpe_governance=jdata.sob_governanca_arpe,
+                            resolved=jdata.resolvido,
+                        )
                     )
-                )
-            counts["justificativas_upserted"] += 1
+                counts["justificativas_upserted"] += 1
 
     return counts

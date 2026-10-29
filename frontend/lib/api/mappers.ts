@@ -107,8 +107,8 @@ export function mapBackendTreeToPlanData(tree: BackendStrategicPerspectiveDTO[])
 
           for (const stepDto of krDto.steps ?? []) {
             etapas.push(mapEtapa(stepDto))
-            if (stepDto.delay_justification) {
-              justificativas.push(mapJustificativa(stepDto.delay_justification))
+            for (const dto of stepDto.delay_justifications ?? []) {
+              justificativas.push(mapJustificativa(dto))
             }
           }
         }

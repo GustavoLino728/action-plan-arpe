@@ -22,7 +22,7 @@ export interface BackendActionPlanStepDTO {
   actual_end_date: string | null
   responsible: string
   status: BackendStepStatus
-  delay_justification?: BackendDelayJustificationDTO | null
+  delay_justifications?: BackendDelayJustificationDTO[]
 }
 
 export interface BackendKeyResultDTO {

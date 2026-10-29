@@ -17,6 +17,16 @@ class DelayJustificationCreate(DelayJustificationBase):
     step_id: UUID
 
 
+class DelayJustificationUpdate(BaseModel):
+    """Atualização parcial: qualquer campo omitido mantém o valor atual."""
+    registration_date: date | None = None
+    corrective_action: str | None = None
+    responsible: str | None = None
+    solution_forecast: date | None = None
+    under_arpe_governance: bool | None = None
+    resolved: bool | None = None
+
+
 class DelayJustificationRead(DelayJustificationBase):
     id: UUID
     step_id: UUID
