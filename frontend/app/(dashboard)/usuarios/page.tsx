@@ -11,6 +11,7 @@ import {
   type ApiUserCreate,
   type ApiUserUpdate,
 } from "@/lib/api/services";
+import { ApiError } from "@/lib/api/client";
 import {
   Users,
   UserPlus,

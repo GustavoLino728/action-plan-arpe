@@ -114,3 +114,10 @@ export async function getMe(): Promise<UserSession> {
     initials: getInitials(data.name),
   }
 }
+
+export class ApiError extends Error {
+  constructor(message: string, public statusCode: number = 400) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
