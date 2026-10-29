@@ -88,6 +88,8 @@ export async function updateStepStatus(
   })
 }
 
+export type UserRole = 'servidor' | 'coordenador' | 'admin'
+
 export interface ApiUser {
   id: string
   name: string
