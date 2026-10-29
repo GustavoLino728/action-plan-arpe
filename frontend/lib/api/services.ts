@@ -92,7 +92,7 @@ export interface ApiUser {
   id: string
   name: string
   email: string
-  role: string
+  role: UserRole
   department: string | null
   is_active: boolean
   created_at: string
@@ -103,13 +103,13 @@ export interface ApiUserCreate {
   name: string
   email: string
   password: string
-  role: string
+  role: UserRole
   department: string | null
 }
 
 export interface ApiUserUpdate {
   name?: string
-  role?: string
+  role?: UserRole
   is_active?: boolean
   department?: string | null
   password?: string
