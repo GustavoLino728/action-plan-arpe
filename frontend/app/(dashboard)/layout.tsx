@@ -7,6 +7,8 @@ import { Sidebar } from '@/components/sidebar'
 import { Topbar } from '@/components/topbar'
 import { UploadDialog } from '@/components/upload-dialog'
 import { IniciativaForm } from '@/components/iniciativa-forms'
+import { PerspectiveForm } from '@/components/perspective-form'
+import { ObjectiveForm } from '@/components/objective-form'
 import { KrForm } from '@/components/kr-form'
 import { EtapaDrawer } from '@/components/etapa-drawer'
 
@@ -30,6 +32,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <KrForm />
           <EtapaDrawer />
           <UploadDialog />
+          <PerspectiveForm />
+          <ObjectiveForm />
         </PlanProvider>
       </DashboardProvider>
     </Suspense>

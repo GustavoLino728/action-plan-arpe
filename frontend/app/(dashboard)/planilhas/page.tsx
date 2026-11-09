@@ -1,4 +1,4 @@
-import { PlanilhasManager } from "@/components/ouvidoria/PlanilhasManager";
+import { PlanilhasManager } from "@/components/planilhas-manager";
 
 export default function PlanilhasPage() {
   return <PlanilhasManager />;

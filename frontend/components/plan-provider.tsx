@@ -6,7 +6,10 @@ import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api/client'
 import { toBackendStatus } from '@/lib/api/mappers'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
-import type { BackendStrategicPerspectiveDTO } from '@/lib/api/dto'
+import type {
+  BackendStrategicPerspectiveDTO,
+  BackendStrategicObjectiveDTO,
+} from '@/lib/api/dto'
 import { importRowToBackendPayload } from '@/lib/api/import-mappers'
 import {
   createDelayJustification,
@@ -62,6 +65,8 @@ export type DrawerState =
 
 export type IniciativaFormState = { id?: string } | null
 export type KrFormState = { iniciativaId: string; id?: string } | null
+export type PerspectiveFormState = { open: boolean } | null
+export type ObjectiveFormState = { open: boolean; defaultPerspectiveId?: string } | null
 
 interface PlanContextValue {
   iniciativas: Iniciativa[]
@@ -76,6 +81,7 @@ interface PlanContextValue {
   strategic_perspectives: string[]
   setores: string[]
   responsaveis: string[]
+  treeRaw: BackendStrategicPerspectiveDTO[]
 
   query: string
   setQuery: (q: string) => void
@@ -104,6 +110,12 @@ interface PlanContextValue {
   deleteJustificativa: (id: string) => Promise<void>
   importRows: (rows: ImportRow[], mode: 'append' | 'replace') => Promise<ImportSummary>
 
+  addPerspective: (name: string) => Promise<BackendStrategicPerspectiveDTO>
+  addObjective: (
+    perspectiveId: string,
+    name: string,
+  ) => Promise<BackendStrategicObjectiveDTO>
+
   drawer: DrawerState
   openView: (id: string, tab?: DrawerTab) => void
   openEdit: (id: string) => void
@@ -116,6 +128,13 @@ interface PlanContextValue {
   krForm: KrFormState
   openKrForm: (iniciativaId: string, id?: string) => void
   closeKrForm: () => void
+
+  perspectiveForm: PerspectiveFormState
+  openPerspectiveForm: () => void
+  closePerspectiveForm: () => void
+  objectiveForm: ObjectiveFormState
+  openObjectiveForm: (perspectiveId?: string) => void
+  closeObjectiveForm: () => void
 
   uploadOpen: boolean
   setUploadOpen: (open: boolean) => void
@@ -146,6 +165,8 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   const [drawer, setDrawer] = React.useState<DrawerState>({ open: false })
   const [iniciativaForm, setIniciativaForm] = React.useState<IniciativaFormState>(null)
   const [krForm, setKrForm] = React.useState<KrFormState>(null)
+  const [perspectiveForm, setPerspectiveForm] = React.useState<PerspectiveFormState>(null)
+  const [objectiveForm, setObjectiveForm] = React.useState<ObjectiveFormState>(null)
   const [uploadOpen, setUploadOpen] = React.useState(false)
 
   const loadPlan = React.useCallback(async (silent = false) => {
@@ -202,11 +223,17 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     }
   }, [searching, filtered, iniciativas, krs])
 
-  const justSummary = React.useMemo(() => summarizeJustificativas(justificativas), [justificativas])
+  const justSummary = React.useMemo(
+    () => summarizeJustificativas(justificativas),
+    [justificativas],
+  )
   const strategic_perspectives = React.useMemo(
     () =>
       Array.from(
-        new Set([...treeRaw.map((p) => p.name), ...iniciativas.map((i) => i.strategic_perspective)]),
+        new Set([
+          ...treeRaw.map((p) => p.name),
+          ...iniciativas.map((i) => i.strategic_perspective),
+        ]),
       ).filter(Boolean),
     [treeRaw, iniciativas],
   )
@@ -222,7 +249,9 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     async (input: IniciativaInput): Promise<Iniciativa> => {
       try {
         const perspName = input.strategic_perspective.trim()
-        let persp = treeRaw.find((p) => p.name.trim().toLowerCase() === perspName.toLowerCase())
+        let persp = treeRaw.find(
+          (p) => p.name.trim().toLowerCase() === perspName.toLowerCase(),
+        )
         if (!persp) {
           persp = await createPerspective(perspName)
         }
@@ -279,7 +308,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   const deleteIniciativa = React.useCallback(
     async (id: string) => {
       try {
-        await deleteIniciativa(id)
+        await deleteInitiative(id)
         await loadPlan(true)
         setDrawer((s) => (s.open ? { open: false } : s))
         toast.success('Iniciativa removida.')
@@ -490,6 +519,26 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     [loadPlan],
   )
 
+  const addPerspective = React.useCallback(
+    async (name: string) => {
+      const created = await createPerspective(name.trim())
+      await loadPlan(true)
+      toast.success('Perspectiva criada.')
+      return created
+    },
+    [loadPlan],
+  )
+
+  const addObjective = React.useCallback(
+    async (perspectiveId: string, name: string) => {
+      const created = await createObjective(perspectiveId, name.trim())
+      await loadPlan(true)
+      toast.success('Objetivo criado.')
+      return created
+    },
+    [loadPlan],
+  )
+
   const importRows = React.useCallback(
     async (importRowsList: ImportRow[], mode: 'append' | 'replace'): Promise<ImportSummary> => {
       setLoading(true)
@@ -536,6 +585,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       strategic_perspectives,
       setores,
       responsaveis,
+      treeRaw,
       query,
       setQuery,
       filters,
@@ -560,6 +610,8 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       updateJustificativa,
       deleteJustificativa,
       importRows,
+      addPerspective,
+      addObjective,
       drawer,
       openView: (id, tab = 'dados') => setDrawer({ open: true, mode: 'view', id, tab }),
       openEdit: (id) => setDrawer({ open: true, mode: 'edit', id, tab: 'dados' }),
@@ -571,6 +623,13 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       krForm,
       openKrForm: (iniciativaId, id) => setKrForm({ iniciativaId, id }),
       closeKrForm: () => setKrForm(null),
+      perspectiveForm,
+      openPerspectiveForm: () => setPerspectiveForm({ open: true }),
+      closePerspectiveForm: () => setPerspectiveForm(null),
+      objectiveForm,
+      openObjectiveForm: (perspectiveId) =>
+        setObjectiveForm({ open: true, defaultPerspectiveId: perspectiveId }),
+      closeObjectiveForm: () => setObjectiveForm(null),
       uploadOpen,
       setUploadOpen,
     }),
@@ -587,6 +646,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       strategic_perspectives,
       setores,
       responsaveis,
+      treeRaw,
       query,
       filters,
       resetFilters,
@@ -609,9 +669,13 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       updateJustificativa,
       deleteJustificativa,
       importRows,
+      addPerspective,
+      addObjective,
       drawer,
       iniciativaForm,
       krForm,
+      perspectiveForm,
+      objectiveForm,
       uploadOpen,
     ],
   )
