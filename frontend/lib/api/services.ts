@@ -54,8 +54,14 @@ export async function createKeyResult(payload: {
   code: string
   name: string
   goal: string
+  planned_start_date?: string | null
+  planned_end_date?: string | null
+  actual_start_date?: string | null
+  actual_end_date?: string | null
+  responsible?: string | null
+  status?: string | null
 }): Promise<BackendKeyResultDTO> {
-  return apiFetch(API_ENDPOINTS.keyResults + '/', {
+  return apiFetch<BackendKeyResultDTO>('/api/v1/key-results/', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -203,7 +209,17 @@ export async function deleteInitiative(id: string): Promise<void> {
 
 export async function updateKeyResult(
   id: string,
-  payload: Partial<{ code: string; name: string; goal: string }>,
+  payload: Partial<{
+    code: string
+    name: string
+    goal: string
+    planned_start_date: string | null
+    planned_end_date: string | null
+    actual_start_date: string | null
+    actual_end_date: string | null
+    responsible: string | null
+    status: string | null
+  }>,
 ): Promise<BackendKeyResultDTO> {
   return apiFetch<BackendKeyResultDTO>(`/api/v1/key-results/${id}`, {
     method: 'PATCH',

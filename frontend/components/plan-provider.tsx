@@ -328,6 +328,12 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
           code: `KR-${Date.now().toString().slice(-4)}`,
           name: input.nome.trim(),
           goal: input.setor.trim() || 'Meta 2026',
+          planned_start_date: input.dataInicio ?? null,
+          planned_end_date: input.dataTermino ?? null,
+          actual_start_date: input.dataInicioRealizado ?? null,
+          actual_end_date: input.dataTerminoRealizado ?? null,
+          responsible: input.responsavel ?? null,
+          status: input.status ? toBackendStatus(input.status) : null,
         })
         await loadPlan(true)
         return { ...input, id: createdBackend.id }
@@ -345,6 +351,12 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
         await updateKeyResult(id, {
           name: input.nome.trim(),
           goal: input.setor.trim() || 'Meta 2026',
+          planned_start_date: input.dataInicio ?? null,
+          planned_end_date: input.dataTermino ?? null,
+          actual_start_date: input.dataInicioRealizado ?? null,
+          actual_end_date: input.dataTerminoRealizado ?? null,
+          responsible: input.responsavel ?? null,
+          status: input.status ? toBackendStatus(input.status) : null,
         })
         await loadPlan(true)
         toast.success('KR atualizado.')

@@ -70,6 +70,12 @@ export function mapKR(dto: BackendKeyResultDTO, setor: string): KR {
     iniciativaId: dto.initiative_id,
     nome: dto.name,
     setor,
+    dataInicio: dto.planned_start_date ?? undefined,
+    dataTermino: dto.planned_end_date ?? undefined,
+    dataInicioRealizado: dto.actual_start_date ?? undefined,
+    dataTerminoRealizado: dto.actual_end_date ?? undefined,
+    responsavel: dto.responsible ?? undefined,
+    status: dto.status ? toFrontendStatus(dto.status) : undefined,
   }
 }
 

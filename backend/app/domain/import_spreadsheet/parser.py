@@ -144,6 +144,15 @@ def _parse_justificativa(ws, row_num: int, base_col: int) -> JustificativaData |
 def _parse_pa_sheet(ws, sheet_name: str) -> tuple[list[ValidatedRow], list[ImportIssue]]:
     issues: list[ImportIssue] = []
 
+    current_kr_code: str | None = None
+    current_kr_name: str | None = None
+    current_kr_planned_start: date | None = None
+    current_kr_planned_end: date | None = None
+    current_kr_actual_start: date | None = None
+    current_kr_actual_end: date | None = None
+    current_kr_responsible: str | None = None
+    current_kr_status: str | None = None
+
     # 1) Metadados
     metadata: dict[str, str] = {}
     for label, key in _METADATA_LABELS.items():
@@ -204,6 +213,12 @@ def _parse_pa_sheet(ws, sheet_name: str) -> tuple[list[ValidatedRow], list[Impor
                 continue
             current_kr_code = f"KR-{kr_num}"
             current_kr_name = name
+            current_kr_planned_start = planned_start
+            current_kr_planned_end = planned_end
+            current_kr_actual_start = actual_start
+            current_kr_actual_end = actual_end
+            current_kr_responsible = responsible or None
+            current_kr_status = status
             continue
 
         # Etapa
@@ -254,6 +269,12 @@ def _parse_pa_sheet(ws, sheet_name: str) -> tuple[list[ValidatedRow], list[Impor
             kr_code=current_kr_code,
             kr_name=current_kr_name,
             kr_goal=current_kr_name,
+            kr_planned_start_date=current_kr_planned_start,
+            kr_planned_end_date=current_kr_planned_end,
+            kr_actual_start_date=current_kr_actual_start,
+            kr_actual_end_date=current_kr_actual_end,
+            kr_responsible=current_kr_responsible,
+            kr_status=current_kr_status,
             sequential_number=step_num,
             step_name=name,
             planned_start_date=planned_start,

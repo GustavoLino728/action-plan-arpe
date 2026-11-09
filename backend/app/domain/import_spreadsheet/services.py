@@ -99,28 +99,35 @@ async def commit_import(
             inic_cache[ikey] = i
 
         # ─── KeyResult ───
-        kkey = (str(i.id), row.kr_code)
-        kr = kr_cache.get(kkey)
         if not kr:
-            kr = (
-                await db.execute(
-                    select(KeyResult).where(
-                        KeyResult.initiative_id == i.id,
-                        KeyResult.code == row.kr_code,
-                    )
-                )
-            ).scalar_one_or_none()
-            if not kr:
-                kr = KeyResult(
-                    initiative_id=i.id,
-                    code=row.kr_code,
-                    name=row.kr_name,
-                    goal=row.kr_goal,
-                )
-                db.add(kr)
-                await db.flush()
-                counts["key_results_created"] += 1
-            kr_cache[kkey] = kr
+            kr = KeyResult(
+                initiative_id=i.id,
+                code=row.kr_code,
+                name=row.kr_name,
+                goal=row.kr_goal,
+                planned_start_date=row.kr_planned_start_date,
+                planned_end_date=row.kr_planned_end_date,
+                actual_start_date=row.kr_actual_start_date,
+                actual_end_date=row.kr_actual_end_date,
+                responsible=row.kr_responsible,
+                status=StepStatus(row.kr_status) if row.kr_status else None,
+            )
+            db.add(kr)
+            await db.flush()
+            counts["key_results_created"] += 1
+        else:
+            if row.kr_planned_start_date is not None:
+                kr.planned_start_date = row.kr_planned_start_date
+            if row.kr_planned_end_date is not None:
+                kr.planned_end_date = row.kr_planned_end_date
+            if row.kr_actual_start_date is not None:
+                kr.actual_start_date = row.kr_actual_start_date
+            if row.kr_actual_end_date is not None:
+                kr.actual_end_date = row.kr_actual_end_date
+            if row.kr_responsible:
+                kr.responsible = row.kr_responsible
+            if row.kr_status:
+                kr.status = StepStatus(row.kr_status)
 
         # ─── ActionPlanStep (upsert por sequential_number dentro do KR) ───
         step = (

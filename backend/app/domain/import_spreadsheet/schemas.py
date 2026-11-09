@@ -48,6 +48,13 @@ class ValidatedRow(BaseModel):
     status: str
     justificativas: list[JustificativaData] = []
 
+    kr_planned_start_date: date | None = None
+    kr_planned_end_date: date | None = None
+    kr_actual_start_date: date | None = None
+    kr_actual_end_date: date | None = None
+    kr_responsible: str | None = None
+    kr_status: str | None = None
+    
 
 class ImportCommitRequest(BaseModel):
     rows: list[ValidatedRow]

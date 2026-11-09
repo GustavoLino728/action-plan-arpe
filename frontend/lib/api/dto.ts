@@ -32,6 +32,12 @@ export interface BackendKeyResultDTO {
   name: string
   goal: string
   percentage_progress: number
+  planned_start_date?: string | null
+  planned_end_date?: string | null
+  actual_start_date?: string | null
+  actual_end_date?: string | null
+  responsible?: string | null
+  status?: BackendStepStatus | null
   steps?: BackendActionPlanStepDTO[]
 }
 

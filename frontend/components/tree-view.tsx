@@ -165,6 +165,9 @@ export function TreeView() {
                                             KR · {kr.setor || 'Setor não informado'}
                                           </span>
                                           <span className="text-sm font-medium text-balance text-ink">{kr.nome}</span>
+                                          {kr.responsavel && (
+                                            <span className="text-xs text-ink-soft">Responsável: {kr.responsavel}</span>
+                                          )}
                                         </span>
                                         <ProgressBar value={averageProgress(krEtapas)} showLabel className="w-32" label={`Progresso do KR ${kr.nome}`} />
                                       </header>

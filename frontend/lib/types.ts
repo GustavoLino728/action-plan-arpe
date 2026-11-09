@@ -27,6 +27,12 @@ export interface KR {
   iniciativaId: string
   nome: string
   setor: string
+  dataInicio?: string
+  dataTermino?: string
+  dataInicioRealizado?: string
+  dataTerminoRealizado?: string
+  responsavel?: string
+  status?: Status
 }
 
 export type KRInput = Omit<KR, 'id'>

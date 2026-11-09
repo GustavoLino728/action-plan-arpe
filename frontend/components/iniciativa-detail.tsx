@@ -1,6 +1,13 @@
 'use client'
 
-import { ArrowLeftIcon, EyeIcon, ListPlusIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react'
+import {
+  ArrowLeftIcon,
+  EyeIcon,
+  ListPlusIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -249,6 +256,16 @@ export function IniciativaDetail({ id }: { id: string }) {
                   KR · Setor {kr.setor || 'não informado'}
                 </span>
                 <CardTitle className="text-base text-balance">{kr.nome}</CardTitle>
+                {kr.responsavel && (
+                  <span className="text-xs text-ink-soft">Responsável: {kr.responsavel}</span>
+                )}
+                {(kr.dataInicio || kr.dataTermino) && (
+                  <span className="text-xs text-ink-soft">
+                    {kr.dataInicio && `Início ${formatDate(kr.dataInicio)}`}
+                    {kr.dataInicio && kr.dataTermino && ' · '}
+                    {kr.dataTermino && `Término ${formatDate(kr.dataTermino)}`}
+                  </span>
+                )}
                 <ProgressBar
                   value={averageProgress(krEtapas)}
                   showLabel
@@ -261,10 +278,17 @@ export function IniciativaDetail({ id }: { id: string }) {
                   <ListPlusIcon className="size-4" />
                   Nova etapa
                 </Button>
-                <IconAction label="Editar KR" onClick={() => openKrForm(iniciativa.id, kr.id)}>
+                <IconAction
+                  label="Editar KR"
+                  onClick={() => openKrForm(iniciativa.id, kr.id)}
+                >
                   <PencilIcon />
                 </IconAction>
-                <IconAction label="Excluir KR" destructive onClick={() => setPending({ type: 'kr', kr })}>
+                <IconAction
+                  label="Excluir KR"
+                  destructive
+                  onClick={() => setPending({ type: 'kr', kr })}
+                >
                   <Trash2Icon />
                 </IconAction>
               </div>
