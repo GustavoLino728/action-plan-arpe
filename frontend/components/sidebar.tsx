@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useDashboard } from '@/components/dashboard-provider'
 import { useAuth } from '@/components/auth-provider'
@@ -49,9 +50,14 @@ export function Sidebar() {
       >
         <div className="px-5 pb-6 flex items-center justify-between max-lg:pb-4">
           <Link href="/" className="flex items-center">
-            <span className="font-display font-bold text-[18px] text-white tracking-tight">
-              ARPE <span className="text-teal">MAP</span>
-            </span>
+            <Image
+              src="/logo-arpe-negativo.png"
+              alt="ARPE"
+              width={160}
+              height={40}
+              className="h-10 w-auto object-contain"
+              priority
+            />
           </Link>
           <button
             onClick={() => setIsMobileOpen(false)}
