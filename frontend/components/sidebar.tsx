@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useDashboard } from '@/components/dashboard-provider'
 import { useAuth } from '@/components/auth-provider'
@@ -50,13 +49,10 @@ export function Sidebar() {
       >
         <div className="px-5 pb-6 flex items-center justify-between max-lg:pb-4">
           <Link href="/" className="flex items-center">
-            <Image
+            <img
               src="/logo-arpe-negativo.png"
-              alt="ARPE"
-              width={160}
-              height={40}
+              alt="ARPE MPE"
               className="h-10 w-auto object-contain"
-              priority
             />
           </Link>
           <button
