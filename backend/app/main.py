@@ -20,6 +20,7 @@ from app.domain.strategic_map.router import router as strategic_map_router
 from app.domain.import_spreadsheet.router import router as import_router
 from app.domain.audit_logs.router import router as audit_router
 from app.domain.step_comments.router import router as step_comments_router
+from app.domain.departments.router import router as departments_router
 
 logging.basicConfig(
     level=logging.DEBUG if settings.app_debug else logging.INFO,

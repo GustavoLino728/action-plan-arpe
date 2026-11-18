@@ -14,6 +14,7 @@ from app.domain.delay_justification import models as delay_justification_models
 from app.domain.users import models as user_models
 from app.domain.audit_logs.models import AuditLog as audit_logs
 from app.domain.step_comments.models import StepComment as step_comments
+from app.domain.departments.models import Department as departments
 
 sync_db_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
 
