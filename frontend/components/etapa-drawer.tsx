@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { CheckCircleIcon, PlusIcon, XIcon, SendIcon } from 'lucide-react'
+import { CheckCircleIcon, PlusIcon, XIcon, SendIcon, AlertTriangleIcon, InfoIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePlan, type DrawerTab } from '@/components/plan-provider'
 import { Button } from '@/components/button'
@@ -380,6 +380,9 @@ function JustificativasTab({ etapa }: { etapa: Etapa }) {
   const [adding, setAdding] = React.useState(false)
   const justs = justificativas.filter((j) => j.etapaId === etapa.id)
 
+  const status = effectiveStatus(etapa)
+  const canJustify = status === 'atrasado'
+
   const [form, setForm] = React.useState({
     dataRegistro: new Date().toISOString().slice(0, 10),
     acaoCorretiva: '',
@@ -418,6 +421,19 @@ function JustificativasTab({ etapa }: { etapa: Etapa }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Aviso quando não pode justificar */}
+      {!canJustify && (
+        <div className="flex items-start gap-2 rounded-md border border-line bg-line/5 p-3 text-sm">
+          <InfoIcon className="mt-0.5 size-4 shrink-0 text-ink-soft" />
+          <p className="text-ink-soft">
+            Justificativas de atraso só podem ser adicionadas quando a etapa está com
+            status <strong className="text-ink">Atrasado</strong>. Altere o status na aba{' '}
+            <strong className="text-ink">Dados</strong> para registrar uma justificativa.
+          </p>
+        </div>
+      )}
+
+      {/* Lista de justificativas existentes (sempre visível) */}
       {justs.length === 0 && !adding && (
         <div className="rounded-md border border-dashed border-line p-6 text-center text-sm text-ink-soft">
           Nenhuma justificativa registrada.
@@ -461,8 +477,19 @@ function JustificativasTab({ etapa }: { etapa: Etapa }) {
         </div>
       ))}
 
-      {adding ? (
+      {/* Formulário (só permite abrir se atrasado) */}
+      {adding && canJustify ? (
         <form onSubmit={handleAdd} className="flex flex-col gap-3 rounded-md border border-line p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-ink">Nova justificativa</h3>
+            <button
+              type="button"
+              onClick={() => setAdding(false)}
+              className="text-xs text-ink-soft hover:text-ink"
+            >
+              Cancelar
+            </button>
+          </div>
           <div className="flex flex-col gap-1.5">
             <label className={labelCls}>Ação corretiva *</label>
             <textarea
@@ -491,7 +518,7 @@ function JustificativasTab({ etapa }: { etapa: Etapa }) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Previsão de solução</label>
+              <label className={labelCls}>Previsão de solução *</label>
               <input
                 type="date"
                 className={inputCls}
@@ -507,21 +534,49 @@ function JustificativasTab({ etapa }: { etapa: Etapa }) {
                 checked={form.sobGovernanca}
                 onChange={(e) => setForm((f) => ({ ...f, sobGovernanca: e.target.checked }))}
               />
-              <label htmlFor="gov" className="text-xs font-medium text-ink">Sob governança ARPE</label>
+              <label htmlFor="gov" className="text-xs font-medium text-ink">
+                Sob governança ARPE
+              </label>
             </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" size="sm" variant="outline" onClick={() => setAdding(false)}>
               Cancelar
             </Button>
-            <Button type="submit" size="sm">Salvar</Button>
+            <Button type="submit" size="sm">
+              Salvar
+            </Button>
           </div>
         </form>
       ) : (
-        <Button variant="outline" onClick={() => setAdding(true)} className="self-start">
-          <PlusIcon className="size-4" />
-          Adicionar justificativa
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setAdding(true)}
+            disabled={!canJustify}
+            className="self-start"
+            title={
+              canJustify
+                ? 'Adicionar justificativa de atraso'
+                : 'Apenas etapas com status "Atrasado" podem ter justificativa'
+            }
+          >
+            <PlusIcon className="size-4" />
+            Adicionar justificativa
+          </Button>
+          {!canJustify && (
+            <p className="text-xs text-ink-soft">
+              Status atual:{' '}
+              <span className="font-medium text-ink">
+                {status === 'concluido'
+                  ? 'Concluído'
+                  : status === 'em_andamento'
+                    ? 'Em Andamento'
+                    : 'A Iniciar'}
+              </span>
+            </p>
+          )}
+        </div>
       )}
     </div>
   )
