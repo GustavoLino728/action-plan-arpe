@@ -5,8 +5,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictError, NotFoundError
 from app.core.security import hash_password
+from app.domain.departments.models import Department
 from app.domain.users.models import User
 from app.domain.users.schemas import UserCreate, UserUpdate
+
+
+async def _validate_department(
+    db: AsyncSession, department_id: uuid.UUID | None
+) -> None:
+    if department_id is None:
+        return
+    dept = await db.get(Department, department_id)
+    if not dept:
+        raise NotFoundError("Setor não encontrado.")
 
 
 async def create_user(db: AsyncSession, data: UserCreate) -> User:
@@ -14,12 +25,14 @@ async def create_user(db: AsyncSession, data: UserCreate) -> User:
     if result.scalars().first():
         raise ConflictError("Já existe um usuário com este e-mail.")
 
+    await _validate_department(db, data.department_id)
+
     user = User(
         name=data.name,
         email=data.email,
         password_hash=hash_password(data.password),
         role=data.role,
-        department=data.department,
+        department_id=data.department_id,
     )
     db.add(user)
     await db.commit()
@@ -45,9 +58,15 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     return result.scalars().first()
 
 
-async def update_user(db: AsyncSession, user_id: uuid.UUID, data: UserUpdate) -> User:
+async def update_user(
+    db: AsyncSession, user_id: uuid.UUID, data: UserUpdate
+) -> User:
     user = await get_user_by_id(db, user_id)
     update_data = data.model_dump(exclude_unset=True)
+
+    if "department_id" in update_data:
+        await _validate_department(db, update_data["department_id"])
+
     for field, value in update_data.items():
         setattr(user, field, value)
     await db.commit()

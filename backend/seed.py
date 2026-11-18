@@ -38,7 +38,6 @@ async def seed_admin(session: AsyncSession) -> bool:
         email=admin_email.lower(),
         password_hash=hash_password(admin_password),
         role="admin",
-        department="CTI",
         is_active=True,
     )
     session.add(admin)

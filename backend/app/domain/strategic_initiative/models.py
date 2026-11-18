@@ -8,9 +8,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
-    # CORREÇÃO: Removido o "_estrategico" do import
     from app.domain.strategic_objective.models import StrategicObjective
     from app.domain.key_result.models import KeyResult
+    from app.domain.departments.models import Department
 
 
 class StrategicInitiative(Base, TimestampMixin):
@@ -22,16 +22,24 @@ class StrategicInitiative(Base, TimestampMixin):
     strategic_objective_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("strategic_objectives.id", ondelete="CASCADE"), nullable=False
     )
-    
-    responsible_sector: Mapped[str] = mapped_column(String(255), nullable=False)
+
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     responsible_manager: Mapped[str] = mapped_column(String(255), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     total_estimated_value: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     current_year_estimated_value: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
+    department_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("departments.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    department: Mapped["Department | None"] = relationship(
+        foreign_keys=[department_id],
+        lazy="joined",
+    )
+
     strategic_objective: Mapped["StrategicObjective"] = relationship(back_populates="initiatives")
-    
     key_results: Mapped[List["KeyResult"]] = relationship(
         back_populates="initiative", cascade="all, delete-orphan"
     )

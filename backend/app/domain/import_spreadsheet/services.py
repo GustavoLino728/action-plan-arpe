@@ -10,6 +10,20 @@ from app.domain.key_result.models import KeyResult
 from app.domain.strategic_initiative.models import StrategicInitiative
 from app.domain.strategic_objective.models import StrategicObjective
 from app.domain.strategic_perspective.models import StrategicPerspective
+from app.domain.departments.models import Department
+
+
+async def _get_or_create_department(db: AsyncSession, name: str) -> Department:
+    name = name.strip()
+    existing = (
+        await db.execute(select(Department).where(Department.name == name))
+    ).scalar_one_or_none()
+    if existing:
+        return existing
+    dept = Department(name=name, acronym=name[:10].upper(), is_oversight=False)
+    db.add(dept)
+    await db.flush()
+    return dept
 
 
 async def commit_import(
@@ -84,9 +98,10 @@ async def commit_import(
                 )
             ).scalar_one_or_none()
             if not i:
+                dept = await _get_or_create_department(db, row.responsible_sector)
                 i = StrategicInitiative(
                     strategic_objective_id=o.id,
-                    responsible_sector=row.responsible_sector,
+                    department_id=dept.id,
                     name=row.initiative_name,
                     responsible_manager=row.responsible_manager,
                     summary=row.summary,
@@ -99,22 +114,34 @@ async def commit_import(
             inic_cache[ikey] = i
 
         # ─── KeyResult ───
+        kkey = (str(i.id), row.kr_code)
+        kr = kr_cache.get(kkey)
         if not kr:
-            kr = KeyResult(
-                initiative_id=i.id,
-                code=row.kr_code,
-                name=row.kr_name,
-                goal=row.kr_goal,
-                planned_start_date=row.kr_planned_start_date,
-                planned_end_date=row.kr_planned_end_date,
-                actual_start_date=row.kr_actual_start_date,
-                actual_end_date=row.kr_actual_end_date,
-                responsible=row.kr_responsible,
-                status=StepStatus(row.kr_status) if row.kr_status else None,
-            )
-            db.add(kr)
-            await db.flush()
-            counts["key_results_created"] += 1
+            kr = (
+                await db.execute(
+                    select(KeyResult).where(
+                        KeyResult.initiative_id == i.id,
+                        KeyResult.code == row.kr_code,
+                    )
+                )
+            ).scalar_one_or_none()
+            if not kr:
+                kr = KeyResult(
+                    initiative_id=i.id,
+                    code=row.kr_code,
+                    name=row.kr_name,
+                    goal=row.kr_goal,
+                    planned_start_date=row.kr_planned_start_date,
+                    planned_end_date=row.kr_planned_end_date,
+                    actual_start_date=row.kr_actual_start_date,
+                    actual_end_date=row.kr_actual_end_date,
+                    responsible=row.kr_responsible,
+                    status=StepStatus(row.kr_status) if row.kr_status else None,
+                )
+                db.add(kr)
+                await db.flush()
+                counts["key_results_created"] += 1
+            kr_cache[kkey] = kr
         else:
             if row.kr_planned_start_date is not None:
                 kr.planned_start_date = row.kr_planned_start_date
