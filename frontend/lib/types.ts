@@ -79,6 +79,15 @@ export interface EtapaRow extends Etapa {
   iniciativa: Iniciativa
 }
 
+export interface StepComment {
+  id: string
+  stepId: string
+  userId: string | null
+  author: string
+  message: string
+  createdAt: string
+}
+
 export interface Filters {
   strategic_perspective: string
   setor: string

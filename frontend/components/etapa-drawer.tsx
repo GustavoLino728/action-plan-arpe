@@ -13,10 +13,11 @@ import {
   effectiveStatus,
   formatDate,
 } from '@/lib/plan-utils'
-import type { Etapa, Justificativa, Status, LogEntry } from '@/lib/types'
-import { mapAuditLog } from '@/lib/api/mappers'
+import type { Etapa, Justificativa, Status, StepComment, LogEntry } from '@/lib/types'
+import { mapAuditLog, mapStepComment } from '@/lib/api/mappers'
 import { cn } from '@/lib/utils'
-import { fetchAuditLogs } from '@/lib/api/services'
+import { fetchAuditLogs, fetchStepComments } from '@/lib/api/services'
+import { fieldLabel, formatChangeValue } from '@/lib/audit-labels'
 
 const labelCls = 'text-xs font-medium text-ink'
 const inputCls =
@@ -310,7 +311,7 @@ function ViewPanel({ etapaId, initialTab, onClose }: { etapaId: string; initialT
         </button>
       </header>
       <div className="flex gap-1 border-b border-line px-5">
-        {(['dados', 'justificativas', 'historico'] as DrawerTab[]).map((tab) => (
+        {(['dados', 'justificativas',  'comentarios', 'historico'] as DrawerTab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -321,6 +322,7 @@ function ViewPanel({ etapaId, initialTab, onClose }: { etapaId: string; initialT
           >
             {tab === 'dados' && 'Dados'}
             {tab === 'justificativas' && 'Justificativas'}
+            {tab === 'comentarios' && 'Comentários'}
             {tab === 'historico' && 'Histórico'}
           </button>
         ))}
@@ -328,6 +330,7 @@ function ViewPanel({ etapaId, initialTab, onClose }: { etapaId: string; initialT
       <div className="flex-1 overflow-y-auto p-5">
         {activeTab === 'dados' && <DadosTab etapa={etapa} />}
         {activeTab === 'justificativas' && <JustificativasTab etapa={etapa} />}
+        {activeTab === 'comentarios' && <ComentariosTab etapa={etapa} />}
         {activeTab === 'historico' && <HistoricoTab etapa={etapa} />}
       </div>
       <footer className="flex justify-end gap-2 border-t border-line p-4">
@@ -524,13 +527,133 @@ function JustificativasTab({ etapa }: { etapa: Etapa }) {
   )
 }
 
-function HistoricoTab({ etapa }: { etapa: Etapa }) {
-  const { addLog } = usePlan()
-  const [logs, setLogs] = React.useState<LogEntry[]>([])
+function ComentariosTab({ etapa }: { etapa: Etapa }) {
+  const { addComment, deleteComment, currentUser } = usePlan()
+  const [comments, setComments] = React.useState<StepComment[]>([])
   const [loading, setLoading] = React.useState(true)
-  const [comment, setComment] = React.useState('')
+  const [message, setMessage] = React.useState('')
   const [sending, setSending] = React.useState(false)
   const [refreshKey, setRefreshKey] = React.useState(0)
+
+  React.useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    fetchStepComments(etapa.id)
+      .then((dtos) => {
+        if (!cancelled) setComments(dtos.map(mapStepComment))
+      })
+      .catch((err) => {
+        if (!cancelled) toast.error(`Erro ao carregar comentários: ${err.message}`)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [etapa.id, refreshKey])
+
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault()
+    if (!message.trim()) return
+    setSending(true)
+    try {
+      await addComment(etapa.id, message)
+      setMessage('')
+      setRefreshKey((k) => k + 1)
+    } catch {
+      /* toast exibido pelo addComment */
+    } finally {
+      setSending(false)
+    }
+  }
+
+  async function handleDelete(commentId: string) {
+    if (!confirm('Excluir este comentário?')) return
+    try {
+      await deleteComment(etapa.id, commentId)
+      setRefreshKey((k) => k + 1)
+    } catch {
+      /* toast exibido pelo deleteComment */
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <form onSubmit={handleSend} className="flex flex-col gap-2">
+        <label className="text-xs font-medium text-ink">Novo comentário</label>
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Escreva um comentário sobre esta etapa…"
+          rows={3}
+          className="w-full resize-none rounded-md border border-line bg-panel px-3 py-2 text-sm text-ink focus:border-teal focus:outline-none focus:ring-2 focus:ring-teal/40"
+        />
+        <div className="flex justify-end">
+          <Button type="submit" size="sm" disabled={!message.trim() || sending}>
+            <SendIcon className="size-3.5" />
+            {sending ? 'Enviando...' : 'Comentar'}
+          </Button>
+        </div>
+      </form>
+
+      <div className="h-px bg-line/40" />
+
+      {loading ? (
+        <div className="rounded-md border border-dashed border-line p-6 text-center text-sm text-ink-soft">
+          Carregando comentários...
+        </div>
+      ) : comments.length === 0 ? (
+        <div className="rounded-md border border-dashed border-line p-6 text-center text-sm text-ink-soft">
+          Nenhum comentário ainda. Seja o primeiro a comentar.
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {comments.map((c) => {
+            const canDelete =
+              currentUser?.id === c.userId || currentUser?.role === 'admin'
+            return (
+              <li
+                key={c.id}
+                className="flex flex-col gap-1 rounded-md border border-line bg-line/5 p-3"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-ink">{c.author}</span>
+                    <span className="text-ink-soft">·</span>
+                    <span className="text-ink-soft">
+                      {new Date(c.createdAt).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(c.id)}
+                      className="text-xs text-rose-600 hover:underline dark:text-rose-400"
+                    >
+                      Excluir
+                    </button>
+                  )}
+                </div>
+                <p className="whitespace-pre-wrap text-sm text-ink">{c.message}</p>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function HistoricoTab({ etapa }: { etapa: Etapa }) {
+  const [logs, setLogs] = React.useState<LogEntry[]>([])
+  const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
     let cancelled = false
@@ -548,97 +671,72 @@ function HistoricoTab({ etapa }: { etapa: Etapa }) {
     return () => {
       cancelled = true
     }
-  }, [etapa.id, refreshKey])
+  }, [etapa.id])
 
-  async function handleSend(e: React.FormEvent) {
-    e.preventDefault()
-    if (!comment.trim()) return
-    setSending(true)
-    try {
-      await addLog(etapa.id, comment)
-      setComment('')
-      setRefreshKey((k) => k + 1)
-    } catch {
-      /* toast já exibido pelo addLog */
-    } finally {
-      setSending(false)
-    }
+  if (loading) {
+    return (
+      <div className="rounded-md border border-dashed border-line p-6 text-center text-sm text-ink-soft">
+        Carregando histórico...
+      </div>
+    )
+  }
+
+  if (logs.length === 0) {
+    return (
+      <div className="rounded-md border border-dashed border-line p-6 text-center text-sm text-ink-soft">
+        Nenhuma alteração registrada.
+      </div>
+    )
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <form onSubmit={handleSend} className="flex flex-col gap-2">
-        <label className="text-xs font-medium text-ink">Novo comentário</label>
-        <textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Escreva um comentário ou anotação sobre esta etapa…"
-          rows={3}
-          className="w-full resize-none rounded-md border border-line bg-panel px-3 py-2 text-sm text-ink focus:border-teal focus:outline-none focus:ring-2 focus:ring-teal/40"
-        />
-        <div className="flex justify-end">
-          <Button type="submit" size="sm" disabled={!comment.trim() || sending}>
-            <SendIcon className="size-3.5" />
-            {sending ? 'Enviando...' : 'Comentar'}
-          </Button>
-        </div>
-      </form>
+    <ul className="flex flex-col gap-3">
+      {logs.map((entry) => {
+        const hasChanges = entry.changes && Object.keys(entry.changes).length > 0
+        return (
+          <li
+            key={entry.id}
+            className="flex flex-col gap-1 rounded-md border border-line bg-line/5 p-3"
+          >
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="font-medium text-ink">{entry.author}</span>
+              <span className="text-ink-soft">·</span>
+              <span className="text-ink-soft">{formatDate(entry.date)}</span>
+              <span
+                className={
+                  entry.type === 'status'
+                    ? 'rounded-md bg-info/10 px-1.5 py-0.5 text-[10px] font-medium text-info'
+                    : 'rounded-md bg-line/40 px-1.5 py-0.5 text-[10px] font-medium text-ink-soft'
+                }
+              >
+                {entry.type === 'status' ? 'Status' : 'Sistema'}
+              </span>
+            </div>
 
-      <div className="h-px bg-line/40" />
+            {/* Texto principal: só mostra se houver message (created/deleted) */}
+            {entry.text && <p className="text-sm text-ink">{entry.text}</p>}
 
-      {loading ? (
-        <div className="rounded-md border border-dashed border-line p-6 text-center text-sm text-ink-soft">
-          Carregando histórico...
-        </div>
-      ) : logs.length === 0 ? (
-        <div className="rounded-md border border-dashed border-line p-6 text-center text-sm text-ink-soft">
-          Nenhum registro no histórico.
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-3">
-          {logs.map((entry) => (
-            <li
-              key={entry.id}
-              className="flex flex-col gap-1 rounded-md border border-line bg-line/5 p-3"
-            >
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="font-medium text-ink">{entry.author}</span>
-                <span className="text-ink-soft">·</span>
-                <span className="text-ink-soft">{formatDate(entry.date)}</span>
-                <span
-                  className={
-                    entry.type === 'comentario'
-                      ? 'rounded-md bg-teal/10 px-1.5 py-0.5 text-[10px] font-medium text-teal'
-                      : entry.type === 'status'
-                        ? 'rounded-md bg-info/10 px-1.5 py-0.5 text-[10px] font-medium text-info'
-                        : 'rounded-md bg-line/40 px-1.5 py-0.5 text-[10px] font-medium text-ink-soft'
-                  }
-                >
-                  {entry.type === 'comentario'
-                    ? 'Comentário'
-                    : entry.type === 'status'
-                      ? 'Status'
-                      : 'Sistema'}
-                </span>
-              </div>
-              <p className="text-sm text-ink">{entry.text}</p>
-              {entry.changes && Object.keys(entry.changes).length > 0 && (
-                <ul className="mt-1 flex flex-col gap-0.5 text-xs text-ink-soft">
-                  {Object.entries(entry.changes).map(([field, diff]) => (
-                    <li key={field}>
-                      <span className="font-medium text-ink">{field}</span>:{' '}
-                      <span className="line-through opacity-60">
-                        {String(diff.old ?? '—')}
-                      </span>{' '}
-                      → <span className="font-medium text-ink">{String(diff.new ?? '—')}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+            {/* Diff estruturado com labels em PT */}
+            {hasChanges && (
+              <ul className="mt-1 flex flex-col gap-0.5 text-xs text-ink-soft">
+                {Object.entries(entry.changes!).map(([field, diff]) => (
+                  <li key={field}>
+                    <span className="font-medium text-ink">{fieldLabel(field)}</span>
+                    {': '}
+                    <span className="line-through opacity-60">
+                      {formatChangeValue(field, diff.old)}
+                    </span>
+                    {' → '}
+                    <span className="font-medium text-ink">
+                      {formatChangeValue(field, diff.new)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        )
+      })}
+    </ul>
   )
 }

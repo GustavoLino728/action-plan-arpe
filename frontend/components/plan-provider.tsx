@@ -29,6 +29,8 @@ import {
   fetchStrategicMapTree,
   updateStepStatus,
   createComment,
+  createStepComment,
+  deleteStepComment,
 } from '@/lib/api/services'
 
 import { type ImportRow, type ImportSummary } from '@/lib/import-utils'
@@ -57,7 +59,7 @@ import {
   type PlanData,
 } from '@/lib/types'
 
-export type DrawerTab = 'dados' | 'justificativas' | 'historico'
+export type DrawerTab = 'dados' | 'justificativas' | 'comentarios' | 'historico' 
 
 export type DrawerState =
   | { open: false }
@@ -105,7 +107,8 @@ interface PlanContextValue {
   addEtapa: (input: EtapaInput) => Promise<Etapa>
   updateEtapa: (id: string, input: EtapaInput) => Promise<void>
   deleteEtapa: (id: string) => Promise<void>
-  addLog: (etapaId: string, text: string) => Promise<void>
+  addComment: (etapaId: string, message: string) => Promise<void>
+  deleteComment: (etapaId: string, commentId: string) => Promise<void>
   addJustificativa: (etapaId: string, input: JustificativaInput) => Promise<void>
   updateJustificativa: (id: string, input: JustificativaInput) => Promise<void>
   deleteJustificativa: (id: string) => Promise<void>
@@ -451,22 +454,6 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     [loadPlan],
   )
 
-  const addLog = React.useCallback(async (etapaId: string, text: string) => {
-    const trimmed = text.trim()
-    if (!trimmed) return
-    try {
-      await createComment({
-        entity_type: 'step',
-        entity_id: etapaId,
-        message: trimmed,
-      })
-      toast.success('Comentário adicionado.')
-    } catch (err: any) {
-      toast.error(`Erro ao comentar: ${err.message}`)
-      throw err
-    }
-  }, [])
-
   const addJustificativa = React.useCallback(
     async (etapaId: string, input: JustificativaInput) => {
       if (!input.previsaoSolucao) {
@@ -591,6 +578,34 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     [loadPlan],
   )
 
+  const addComment = React.useCallback(
+    async (etapaId: string, message: string) => {
+      const trimmed = message.trim()
+      if (!trimmed) return
+      try {
+        await createStepComment(etapaId, trimmed)
+        toast.success('Comentário adicionado.')
+      } catch (err: any) {
+        toast.error(`Erro ao comentar: ${err.message}`)
+        throw err
+      }
+    },
+    [],
+  )
+
+  const deleteComment = React.useCallback(
+    async (etapaId: string, commentId: string) => {
+      try {
+        await deleteStepComment(etapaId, commentId)
+        toast.success('Comentário removido.')
+      } catch (err: any) {
+        toast.error(`Erro ao remover comentário: ${err.message}`)
+        throw err
+      }
+    },
+    [],
+  )
+
   const value = React.useMemo<PlanContextValue>(
     () => ({
       iniciativas,
@@ -625,7 +640,8 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       addEtapa,
       updateEtapa,
       deleteEtapa,
-      addLog,
+      addComment,
+      deleteComment,
       addJustificativa,
       updateJustificativa,
       deleteJustificativa,
@@ -684,7 +700,8 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       addEtapa,
       updateEtapa,
       deleteEtapa,
-      addLog,
+      addComment,
+      deleteComment,
       addJustificativa,
       updateJustificativa,
       deleteJustificativa,

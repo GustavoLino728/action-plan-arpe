@@ -77,3 +77,12 @@ export interface BackendAuditLogDTO {
   message: string | null
   created_at: string
 }
+
+export interface BackendStepCommentDTO {
+  id: string
+  step_id: string
+  user_id: string | null
+  user_name: string | null
+  message: string
+  created_at: string
+}

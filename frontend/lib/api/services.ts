@@ -9,6 +9,7 @@ import type {
   BackendStrategicObjectiveDTO,
   BackendStrategicPerspectiveDTO,
   BackendAuditLogDTO,
+  BackendStepCommentDTO,
 } from './dto'
 import type { PlanData, Status } from '@/lib/types'
 
@@ -273,5 +274,30 @@ export async function createComment(payload: {
   return apiFetch<BackendAuditLogDTO>('/api/v1/audit-logs/comments', {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+}
+
+export async function fetchStepComments(
+  stepId: string,
+): Promise<BackendStepCommentDTO[]> {
+  return apiFetch<BackendStepCommentDTO[]>(`/api/v1/steps/${stepId}/comments`)
+}
+
+export async function createStepComment(
+  stepId: string,
+  message: string,
+): Promise<BackendStepCommentDTO> {
+  return apiFetch<BackendStepCommentDTO>(`/api/v1/steps/${stepId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  })
+}
+
+export async function deleteStepComment(
+  stepId: string,
+  commentId: string,
+): Promise<void> {
+  await apiFetch<void>(`/api/v1/steps/${stepId}/comments/${commentId}`, {
+    method: 'DELETE',
   })
 }

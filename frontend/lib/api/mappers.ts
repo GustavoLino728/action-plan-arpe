@@ -6,8 +6,9 @@ import type {
   BackendStepStatus,
   BackendStrategicPerspectiveDTO,
   BackendAuditLogDTO,
+  BackendStepCommentDTO,
 } from './dto'
-import type { Etapa, Iniciativa, Justificativa, KR, PlanData, Status, LogEntry } from '@/lib/types'
+import type { Etapa, Iniciativa, Justificativa, KR, PlanData, Status, LogEntry, StepComment } from '@/lib/types'
 import { expectedProgress } from '@/lib/plan-utils'
 
 const BACKEND_TO_FRONTEND_STATUS: Record<BackendStepStatus, Status> = {
@@ -137,16 +138,7 @@ export function mapAuditLog(dto: BackendAuditLogDTO): LogEntry {
         ? 'status'
         : 'sistema'
 
-  const text =
-    dto.message ??
-    (dto.changes
-      ? Object.entries(dto.changes)
-          .map(
-            ([field, diff]) =>
-              `${field}: ${JSON.stringify(diff.old)} → ${JSON.stringify(diff.new)}`,
-          )
-          .join('; ')
-      : dto.action)
+  const text = dto.message ?? ''
 
   return {
     id: dto.id,
@@ -155,5 +147,16 @@ export function mapAuditLog(dto: BackendAuditLogDTO): LogEntry {
     type,
     text,
     changes: dto.changes ?? undefined,
+  }
+}
+
+export function mapStepComment(dto: BackendStepCommentDTO): StepComment {
+  return {
+    id: dto.id,
+    stepId: dto.step_id,
+    userId: dto.user_id,
+    author: dto.user_name ?? 'Sistema',
+    message: dto.message,
+    createdAt: dto.created_at,
   }
 }
