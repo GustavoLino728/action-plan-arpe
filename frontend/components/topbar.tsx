@@ -28,7 +28,7 @@ export function Topbar() {
   const { theme, toggleTheme } = useTheme()
   const { user, logout } = useAuth()
   const { toggleSidebar } = useDashboard()
-  const { query, setQuery, reload, setUploadOpen, loading } = usePlan()
+  const { query, setQuery, reload, loading } = usePlan()
   const router = useRouter()
   const pathname = usePathname()
 
@@ -87,25 +87,6 @@ export function Topbar() {
             </button>
           )}
         </form>
-
-        <button
-          onClick={() => reload()}
-          aria-label="Sincronizar"
-          title="Sincronizar com o backend"
-          className="p-2 rounded-lg text-ink-soft hover:bg-line/10 hover:text-ink transition-colors cursor-pointer border-none bg-transparent"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
-
-        <button
-          onClick={() => setUploadOpen(true)}
-          aria-label="Carga de Dados"
-          title="Carga de Dados"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal text-white text-[13px] font-medium hover:bg-teal/90 transition-colors cursor-pointer border-none"
-        >
-          <Upload className="w-4 h-4" />
-          <span className="hidden sm:inline">Carga</span>
-        </button>
 
         <button
           onClick={toggleTheme}

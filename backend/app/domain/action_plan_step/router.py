@@ -10,16 +10,14 @@ from app.core.exceptions import NotFoundError
 router = APIRouter(prefix="/api/v1/steps", tags=["ARPE - Mapa Estratégico"])
 
 
-@router.post("/", response_model=schemas.ActionPlanStepRead, status_code=status.HTTP_201_CREATED)
-async def create_step(payload: schemas.ActionPlanStepCreate, db: DBSession, current_user: CurrentUser):
-    kr = await db.get(KeyResult, payload.key_result_id)
-    if not kr:
-        raise NotFoundError("Key Result not found")
-
-    step = models.ActionPlanStep(**payload.model_dump())
-    db.add(step)
+@router.post("/", response_model=schemas.ActionPlanStepRead, status_code=201)
+async def create_step(
+    payload: schemas.ActionPlanStepCreate,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    step = await services.create_step(db, payload, current_user)
     await db.commit()
-    await db.refresh(step)
     return step
 
 
@@ -47,17 +45,15 @@ async def update_step_status(
     await db.refresh(step)
     return step
 
-@router.patch(
-    "/{step_id}",
-    response_model=schemas.ActionPlanStepRead,
-)
+
+@router.patch("/{step_id}", response_model=schemas.ActionPlanStepRead)
 async def update_step(
     step_id: UUID,
     payload: schemas.ActionPlanStepUpdate,
     db: DBSession,
     current_user: CurrentUser,
 ):
-    step = await services.update_step(db, step_id, payload)
+    step = await services.update_step(db, step_id, payload, current_user)
     await db.commit()
     return step
 
@@ -68,5 +64,5 @@ async def delete_step(
     db: DBSession,
     current_user: CurrentUser,
 ):
-    await services.delete_step(db, step_id)
+    await services.delete_step(db, step_id, current_user)
     await db.commit()

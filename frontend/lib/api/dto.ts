@@ -65,3 +65,15 @@ export interface BackendStrategicPerspectiveDTO {
   name: string
   strategic_objectives?: BackendStrategicObjectiveDTO[]
 }
+
+export interface BackendAuditLogDTO {
+  id: string
+  entity_type: string
+  entity_id: string
+  action: string
+  user_id: string | null
+  user_name: string | null
+  changes: Record<string, { old: unknown; new: unknown }> | null
+  message: string | null
+  created_at: string
+}

@@ -6,6 +6,7 @@ export interface LogEntry {
   author: string
   type: 'comentario' | 'status' | 'sistema'
   text: string
+  changes?: Record<string, { old: unknown; new: unknown }>
 }
 
 export interface Iniciativa {

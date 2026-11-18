@@ -10,7 +10,7 @@ export function PageTitle({
   actions?: React.ReactNode
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="flex flex-wrap items-end justify-between gap-3 pt-[30px] max-lg:pt-[20px] max-md:pt-4">
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight text-balance text-teal dark:text-foreground">
           {title}

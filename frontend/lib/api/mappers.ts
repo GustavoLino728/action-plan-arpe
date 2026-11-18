@@ -5,8 +5,9 @@ import type {
   BackendKeyResultDTO,
   BackendStepStatus,
   BackendStrategicPerspectiveDTO,
+  BackendAuditLogDTO,
 } from './dto'
-import type { Etapa, Iniciativa, Justificativa, KR, PlanData, Status } from '@/lib/types'
+import type { Etapa, Iniciativa, Justificativa, KR, PlanData, Status, LogEntry } from '@/lib/types'
 import { expectedProgress } from '@/lib/plan-utils'
 
 const BACKEND_TO_FRONTEND_STATUS: Record<BackendStepStatus, Status> = {
@@ -125,5 +126,34 @@ export function mapBackendTreeToPlanData(tree: BackendStrategicPerspectiveDTO[])
   return {
     data: { iniciativas, krs, etapas, justificativas },
     treeRaw: tree,
+  }
+}
+
+export function mapAuditLog(dto: BackendAuditLogDTO): LogEntry {
+  const type: LogEntry['type'] =
+    dto.action === 'commented'
+      ? 'comentario'
+      : dto.action === 'status_changed'
+        ? 'status'
+        : 'sistema'
+
+  const text =
+    dto.message ??
+    (dto.changes
+      ? Object.entries(dto.changes)
+          .map(
+            ([field, diff]) =>
+              `${field}: ${JSON.stringify(diff.old)} → ${JSON.stringify(diff.new)}`,
+          )
+          .join('; ')
+      : dto.action)
+
+  return {
+    id: dto.id,
+    date: dto.created_at.slice(0, 10),
+    author: dto.user_name ?? 'Sistema',
+    type,
+    text,
+    changes: dto.changes ?? undefined,
   }
 }

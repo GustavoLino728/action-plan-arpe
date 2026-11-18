@@ -12,6 +12,7 @@ from app.database.base import Base, TimestampMixin
 if TYPE_CHECKING:
     from app.domain.key_result.models import KeyResult
     from app.domain.delay_justification.models import DelayJustification
+    from app.domain.step_comments.models import StepComment
 
 
 class StepStatus(str, enum.Enum):
@@ -51,4 +52,10 @@ class ActionPlanStep(Base, TimestampMixin):
         back_populates="step",
         cascade="all, delete-orphan",
         order_by="DelayJustification.created_at",
+    )
+
+    comments: Mapped[list["StepComment"]] = relationship(    
+        back_populates="step",
+        cascade="all, delete-orphan",
+        order_by="StepComment.created_at",
     )

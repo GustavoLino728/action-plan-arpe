@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { CheckCircleIcon, PlusIcon, XIcon } from 'lucide-react'
+import { CheckCircleIcon, PlusIcon, XIcon, SendIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePlan, type DrawerTab } from '@/components/plan-provider'
 import { Button } from '@/components/button'
@@ -13,8 +13,10 @@ import {
   effectiveStatus,
   formatDate,
 } from '@/lib/plan-utils'
-import type { Etapa, Justificativa, Status } from '@/lib/types'
+import type { Etapa, Justificativa, Status, LogEntry } from '@/lib/types'
+import { mapAuditLog } from '@/lib/api/mappers'
 import { cn } from '@/lib/utils'
+import { fetchAuditLogs } from '@/lib/api/services'
 
 const labelCls = 'text-xs font-medium text-ink'
 const inputCls =
@@ -523,23 +525,120 @@ function JustificativasTab({ etapa }: { etapa: Etapa }) {
 }
 
 function HistoricoTab({ etapa }: { etapa: Etapa }) {
-  if (etapa.log.length === 0) {
-    return (
-      <div className="rounded-md border border-dashed border-line p-6 text-center text-sm text-ink-soft">
-        Nenhum histórico registrado.
-      </div>
-    )
+  const { addLog } = usePlan()
+  const [logs, setLogs] = React.useState<LogEntry[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [comment, setComment] = React.useState('')
+  const [sending, setSending] = React.useState(false)
+  const [refreshKey, setRefreshKey] = React.useState(0)
+
+  React.useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    fetchAuditLogs('step', etapa.id)
+      .then((dtos) => {
+        if (!cancelled) setLogs(dtos.map(mapAuditLog))
+      })
+      .catch((err) => {
+        if (!cancelled) toast.error(`Erro ao carregar histórico: ${err.message}`)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [etapa.id, refreshKey])
+
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault()
+    if (!comment.trim()) return
+    setSending(true)
+    try {
+      await addLog(etapa.id, comment)
+      setComment('')
+      setRefreshKey((k) => k + 1)
+    } catch {
+      /* toast já exibido pelo addLog */
+    } finally {
+      setSending(false)
+    }
   }
+
   return (
-    <ul className="flex flex-col gap-3">
-      {etapa.log.map((entry) => (
-        <li key={entry.id} className="flex flex-col gap-0.5 rounded-md border border-line bg-line/5 p-3">
-          <span className="text-xs text-ink-soft">
-            {formatDate(entry.date)} · {entry.author}
-          </span>
-          <p className="text-sm text-ink">{entry.text}</p>
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-4">
+      <form onSubmit={handleSend} className="flex flex-col gap-2">
+        <label className="text-xs font-medium text-ink">Novo comentário</label>
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Escreva um comentário ou anotação sobre esta etapa…"
+          rows={3}
+          className="w-full resize-none rounded-md border border-line bg-panel px-3 py-2 text-sm text-ink focus:border-teal focus:outline-none focus:ring-2 focus:ring-teal/40"
+        />
+        <div className="flex justify-end">
+          <Button type="submit" size="sm" disabled={!comment.trim() || sending}>
+            <SendIcon className="size-3.5" />
+            {sending ? 'Enviando...' : 'Comentar'}
+          </Button>
+        </div>
+      </form>
+
+      <div className="h-px bg-line/40" />
+
+      {loading ? (
+        <div className="rounded-md border border-dashed border-line p-6 text-center text-sm text-ink-soft">
+          Carregando histórico...
+        </div>
+      ) : logs.length === 0 ? (
+        <div className="rounded-md border border-dashed border-line p-6 text-center text-sm text-ink-soft">
+          Nenhum registro no histórico.
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {logs.map((entry) => (
+            <li
+              key={entry.id}
+              className="flex flex-col gap-1 rounded-md border border-line bg-line/5 p-3"
+            >
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-medium text-ink">{entry.author}</span>
+                <span className="text-ink-soft">·</span>
+                <span className="text-ink-soft">{formatDate(entry.date)}</span>
+                <span
+                  className={
+                    entry.type === 'comentario'
+                      ? 'rounded-md bg-teal/10 px-1.5 py-0.5 text-[10px] font-medium text-teal'
+                      : entry.type === 'status'
+                        ? 'rounded-md bg-info/10 px-1.5 py-0.5 text-[10px] font-medium text-info'
+                        : 'rounded-md bg-line/40 px-1.5 py-0.5 text-[10px] font-medium text-ink-soft'
+                  }
+                >
+                  {entry.type === 'comentario'
+                    ? 'Comentário'
+                    : entry.type === 'status'
+                      ? 'Status'
+                      : 'Sistema'}
+                </span>
+              </div>
+              <p className="text-sm text-ink">{entry.text}</p>
+              {entry.changes && Object.keys(entry.changes).length > 0 && (
+                <ul className="mt-1 flex flex-col gap-0.5 text-xs text-ink-soft">
+                  {Object.entries(entry.changes).map(([field, diff]) => (
+                    <li key={field}>
+                      <span className="font-medium text-ink">{field}</span>:{' '}
+                      <span className="line-through opacity-60">
+                        {String(diff.old ?? '—')}
+                      </span>{' '}
+                      → <span className="font-medium text-ink">{String(diff.new ?? '—')}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }

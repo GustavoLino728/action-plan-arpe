@@ -28,6 +28,7 @@ import {
   deleteStep,
   fetchStrategicMapTree,
   updateStepStatus,
+  createComment,
 } from '@/lib/api/services'
 
 import { type ImportRow, type ImportSummary } from '@/lib/import-utils'
@@ -104,7 +105,7 @@ interface PlanContextValue {
   addEtapa: (input: EtapaInput) => Promise<Etapa>
   updateEtapa: (id: string, input: EtapaInput) => Promise<void>
   deleteEtapa: (id: string) => Promise<void>
-  addLog: (etapaId: string, text: string) => void
+  addLog: (etapaId: string, text: string) => Promise<void>
   addJustificativa: (etapaId: string, input: JustificativaInput) => Promise<void>
   updateJustificativa: (id: string, input: JustificativaInput) => Promise<void>
   deleteJustificativa: (id: string) => Promise<void>
@@ -450,13 +451,20 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     [loadPlan],
   )
 
-  const addLog = React.useCallback((etapaId: string, text: string) => {
-    setData((d) => ({
-      ...d,
-      etapas: d.etapas.map((e) =>
-        e.id === etapaId ? { ...e, log: [newLog('comentario', text), ...e.log] } : e,
-      ),
-    }))
+  const addLog = React.useCallback(async (etapaId: string, text: string) => {
+    const trimmed = text.trim()
+    if (!trimmed) return
+    try {
+      await createComment({
+        entity_type: 'step',
+        entity_id: etapaId,
+        message: trimmed,
+      })
+      toast.success('Comentário adicionado.')
+    } catch (err: any) {
+      toast.error(`Erro ao comentar: ${err.message}`)
+      throw err
+    }
   }, [])
 
   const addJustificativa = React.useCallback(

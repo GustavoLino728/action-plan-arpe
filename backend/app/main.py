@@ -18,6 +18,8 @@ from app.domain.action_plan_step.router import router as action_plan_step_router
 from app.domain.delay_justification.router import router as justification_router
 from app.domain.strategic_map.router import router as strategic_map_router
 from app.domain.import_spreadsheet.router import router as import_router
+from app.domain.audit_logs.router import router as audit_router
+from app.domain.step_comments.router import router as step_comments_router
 
 logging.basicConfig(
     level=logging.DEBUG if settings.app_debug else logging.INFO,
@@ -74,6 +76,8 @@ def create_app() -> FastAPI:
     app.include_router(justification_router)
     app.include_router(strategic_map_router)
     app.include_router(import_router)
+    app.include_router(audit_router)
+    app.include_router(step_comments_router)
 
     @app.exception_handler(AppException)
     async def app_exception_handler(request: Request, exc: AppException):
