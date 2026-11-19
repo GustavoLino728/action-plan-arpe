@@ -4,6 +4,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { usePlan } from '@/components/plan-provider'
 import { Button } from '@/components/button'
+import { SearchableSelect } from '@/components/searcheable-select'
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ const textareaCls =
 const EMPTY_FORM = {
   strategic_perspective: '',
   objetivo: '',
+  departmentId: '',
   setor: '',
   nome: '',
   gestor: '',
@@ -38,7 +40,7 @@ export function IniciativaForm() {
     addIniciativa,
     updateIniciativa,
     strategic_perspectives,
-    setores,
+    departments,
   } = usePlan()
 
   const isOpen = iniciativaForm !== null
@@ -55,6 +57,7 @@ export function IniciativaForm() {
       setForm({
         strategic_perspective: existing.strategic_perspective,
         objetivo: existing.objetivo,
+        departmentId: existing.departmentId ?? '',
         setor: existing.setor,
         nome: existing.nome,
         gestor: existing.gestor,
@@ -67,6 +70,26 @@ export function IniciativaForm() {
     }
   }, [isOpen, existing])
 
+  // Opções de setor para o SearchableSelect
+  const departmentOptions = React.useMemo(
+    () =>
+      departments.map((d) => ({
+        value: d.id,
+        label: d.acronym ? `${d.acronym} — ${d.name}` : d.name,
+      })),
+    [departments],
+  )
+
+  // Ao selecionar um department, guarda o id E o nome (para o payload de add/update)
+  function handleDepartmentChange(id: string) {
+    const dept = departments.find((d) => d.id === id)
+    setForm((f) => ({
+      ...f,
+      departmentId: id,
+      setor: dept?.name ?? '',
+    }))
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.strategic_perspective.trim() || !form.objetivo.trim() || !form.nome.trim()) {
@@ -75,11 +98,22 @@ export function IniciativaForm() {
     }
     setSaving(true)
     try {
+      const payload = {
+        strategic_perspective: form.strategic_perspective,
+        objetivo: form.objetivo,
+        setor: form.setor,
+        departmentId: form.departmentId || null,
+        nome: form.nome,
+        gestor: form.gestor,
+        descricao: form.descricao,
+        valorTotal: form.valorTotal,
+        valor2026: form.valor2026,
+      }
       if (isEdit) {
-        await updateIniciativa(editingId!, form)
+        await updateIniciativa(editingId!, payload)
         toast.success('Iniciativa atualizada.')
       } else {
-        await addIniciativa(form)
+        await addIniciativa(payload)
         toast.success('Iniciativa criada.')
       }
       closeIniciativaForm()
@@ -122,19 +156,28 @@ export function IniciativaForm() {
             <label className={labelCls}>Objetivo estratégico *</label>
             <input className={inputCls} value={form.objetivo} onChange={set('objetivo')} required />
           </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Setor responsável</label>
-              <input className={inputCls} value={form.setor} onChange={set('setor')} list="setores" />
-              <datalist id="setores">
-                {setores.map((s) => <option key={s} value={s} />)}
-              </datalist>
+              <SearchableSelect
+                value={form.departmentId}
+                onValueChange={handleDepartmentChange}
+                options={departmentOptions}
+                placeholder="Buscar setor..."
+              />
+              {departments.length === 0 && (
+                <span className="text-[11px] text-ink-soft">
+                  Nenhum setor cadastrado. Cadastre em <strong>Setores</strong>.
+                </span>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Gestor responsável</label>
               <input className={inputCls} value={form.gestor} onChange={set('gestor')} />
             </div>
           </div>
+
           <div className="flex flex-col gap-1.5">
             <label className={labelCls}>Nome da iniciativa *</label>
             <input className={inputCls} value={form.nome} onChange={set('nome')} required />
@@ -153,6 +196,7 @@ export function IniciativaForm() {
               <input className={inputCls} value={form.valor2026} onChange={set('valor2026')} />
             </div>
           </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={closeIniciativaForm} disabled={saving}>
               Cancelar

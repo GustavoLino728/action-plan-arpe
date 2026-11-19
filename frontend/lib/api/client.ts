@@ -9,14 +9,23 @@ const REFRESH_TOKEN_KEY = 'arpe_refresh_token'
 const COOKIE_NAME = 'arpe_session'
 
 
+import type { BackendDepartmentDTO } from './dto'
+
 export interface UserSession {
   id: string
   name: string
   email: string
   role: string
   roleLabel: string
-  department: string | null
+  department: BackendDepartmentDTO | null
   initials: string
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Administrador',
+  diretor: 'Diretor',
+  coordenador: 'Coordenador',
+  servidor: 'Servidor',
 }
 
 export function getStoredToken(): string | null {
@@ -104,13 +113,8 @@ export async function getMe(): Promise<UserSession> {
     name: data.name,
     email: data.email,
     role: data.role,
-    roleLabel:
-      data.role === 'admin'
-        ? 'Administrador'
-        : data.role === 'coordenador'
-          ? 'Coordenador'
-          : 'Servidor',
-    department: data.department || 'ARPE',
+    roleLabel: ROLE_LABELS[data.role] ?? data.role,
+    department: data.department ?? null,
     initials: getInitials(data.name),
   }
 }

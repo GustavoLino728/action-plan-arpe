@@ -81,12 +81,17 @@ export function mapKR(dto: BackendKeyResultDTO, setor: string): KR {
   }
 }
 
-export function mapIniciativa(dto: BackendInitiativeDTO, perspectiva: string, objetivo: string): Iniciativa {
+export function mapIniciativa(
+  dto: BackendInitiativeDTO,
+  perspectiva: string,
+  objetivo: string,
+): Iniciativa {
   return {
     id: dto.id,
     strategic_perspective: perspectiva,
     objetivo,
-    setor: dto.responsible_sector,
+    setor: dto.department?.name ?? '',
+    departmentId: dto.department_id ?? null,
     nome: dto.name,
     gestor: dto.responsible_manager,
     descricao: dto.summary,

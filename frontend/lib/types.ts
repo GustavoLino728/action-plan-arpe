@@ -14,6 +14,7 @@ export interface Iniciativa {
   strategic_perspective: string
   objetivo: string
   setor: string
+  departmentId: string | null
   nome: string
   gestor: string
   descricao: string

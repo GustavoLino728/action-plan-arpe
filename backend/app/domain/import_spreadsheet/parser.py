@@ -202,7 +202,6 @@ def _parse_pa_sheet(ws, sheet_name: str) -> tuple[list[ValidatedRow], list[Impor
         responsible = _text(ws.cell(row=row_num, column=8).value)
         status_raw = _text(ws.cell(row=row_num, column=9).value)
 
-        # KR (inteiro) vs etapa (decimal)
         if "." not in numero_str:
             kr_num = int(numero_float)
             if not name:
@@ -218,7 +217,7 @@ def _parse_pa_sheet(ws, sheet_name: str) -> tuple[list[ValidatedRow], list[Impor
             current_kr_actual_start = actual_start
             current_kr_actual_end = actual_end
             current_kr_responsible = responsible or None
-            current_kr_status = status
+            current_kr_status = _parse_status(status_raw)
             continue
 
         # Etapa

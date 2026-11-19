@@ -27,6 +27,8 @@ import {
   updateStep,
   deleteStep,
   fetchStrategicMapTree,
+  fetchDepartments,
+  type ApiDepartment,
   updateStepStatus,
   createComment,
   createStepComment,
@@ -84,6 +86,7 @@ interface PlanContextValue {
   strategic_perspectives: string[]
   setores: string[]
   responsaveis: string[]
+  departments: ApiDepartment[]
   treeRaw: BackendStrategicPerspectiveDTO[]
 
   query: string
@@ -172,12 +175,16 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   const [perspectiveForm, setPerspectiveForm] = React.useState<PerspectiveFormState>(null)
   const [objectiveForm, setObjectiveForm] = React.useState<ObjectiveFormState>(null)
   const [uploadOpen, setUploadOpen] = React.useState(false)
+  const [departments, setDepartments] = React.useState<ApiDepartment[]>([])
 
   const loadPlan = React.useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     setError(null)
     try {
-      const result = await fetchStrategicMapTree()
+      const [result, depts] = await Promise.all([
+        fetchStrategicMapTree(),
+        fetchDepartments().catch(() => []),
+      ])
       setData(result.data)
       setTreeRaw(result.treeRaw)
     } catch (err: any) {
@@ -253,9 +260,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     async (input: IniciativaInput): Promise<Iniciativa> => {
       try {
         const perspName = input.strategic_perspective.trim()
-        let persp = treeRaw.find(
-          (p) => p.name.trim().toLowerCase() === perspName.toLowerCase(),
-        )
+        let persp = treeRaw.find((p) => p.name.trim().toLowerCase() === perspName.toLowerCase())
         if (!persp) {
           persp = await createPerspective(perspName)
         }
@@ -268,36 +273,46 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
           obj = await createObjective(persp.id, objName)
         }
 
+        const deptId =
+          input.departmentId ??
+          departments.find((d) => d.name === input.setor.trim())?.id ??
+          null
+
         const createdBackend = await createInitiative({
           strategic_objective_id: obj.id,
-          responsible_sector: input.setor.trim(),
           name: input.nome.trim(),
           responsible_manager: input.gestor.trim(),
           summary: input.descricao.trim(),
           total_estimated_value: input.valorTotal.trim() || null,
           current_year_estimated_value: input.valor2026.trim() || null,
+          department_id: deptId,
         })
 
         await loadPlan(true)
-        return { ...input, id: createdBackend.id }
+        return { ...input, id: createdBackend.id, departmentId: deptId }
       } catch (err: any) {
         toast.error(`Erro ao criar iniciativa no backend: ${err.message}`)
         throw err
       }
     },
-    [treeRaw, loadPlan],
+    [treeRaw, departments, loadPlan],
   )
 
   const updateIniciativa = React.useCallback(
     async (id: string, input: IniciativaInput) => {
       try {
+        const deptId =
+          input.departmentId ??
+          departments.find((d) => d.name === input.setor.trim())?.id ??
+          null
+
         await updateInitiative(id, {
-          responsible_sector: input.setor.trim(),
           name: input.nome.trim(),
           responsible_manager: input.gestor.trim(),
           summary: input.descricao.trim(),
           total_estimated_value: input.valorTotal.trim() || null,
           current_year_estimated_value: input.valor2026.trim() || null,
+          department_id: deptId,
         })
         await loadPlan(true)
         toast.success('Iniciativa atualizada.')
@@ -306,7 +321,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
         throw err
       }
     },
-    [loadPlan],
+    [departments, loadPlan],
   )
 
   const deleteIniciativa = React.useCallback(
@@ -621,6 +636,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       setores,
       responsaveis,
       treeRaw,
+      departments,
       query,
       setQuery,
       filters,
@@ -683,6 +699,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       setores,
       responsaveis,
       treeRaw,
+      departments,
       query,
       filters,
       resetFilters,

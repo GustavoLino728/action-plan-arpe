@@ -38,14 +38,14 @@ export async function createObjective(strategic_perspective_id: string, name: st
 
 export async function createInitiative(payload: {
   strategic_objective_id: string
-  responsible_sector: string
   name: string
   responsible_manager: string
   summary: string
   total_estimated_value?: string | null
   current_year_estimated_value?: string | null
+  department_id?: string | null
 }): Promise<BackendInitiativeDTO> {
-  return apiFetch(API_ENDPOINTS.initiatives + '/', {
+  return apiFetch<BackendInitiativeDTO>('/api/v1/initiatives/', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -96,6 +96,43 @@ export async function updateStepStatus(
   })
 }
 
+export interface ApiDepartment {
+  id: string
+  name: string
+  acronym: string | null
+  is_oversight: boolean
+}
+
+export async function fetchDepartments(): Promise<ApiDepartment[]> {
+  return apiFetch<ApiDepartment[]>('/api/v1/departments/')
+}
+
+export async function createDepartment(payload: {
+  name: string
+  acronym?: string | null
+  is_oversight?: boolean
+}): Promise<ApiDepartment> {
+  return apiFetch<ApiDepartment>('/api/v1/departments/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function updateDepartment(
+  id: string,
+  payload: Partial<{ name: string; acronym: string | null; is_oversight: boolean }>,
+): Promise<ApiDepartment> {
+  return apiFetch<ApiDepartment>(`/api/v1/departments/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteDepartment(id: string): Promise<void> {
+  await apiFetch<void>(`/api/v1/departments/${id}`, { method: 'DELETE' })
+}
+
+
 export type UserRole = 'servidor' | 'coordenador' | 'admin'
 
 export interface ApiUser {
@@ -103,7 +140,8 @@ export interface ApiUser {
   name: string
   email: string
   role: UserRole
-  department: string | null
+  department_id: string | null
+  department: ApiDepartment | null
   is_active: boolean
   created_at: string
   updated_at: string
@@ -114,23 +152,23 @@ export interface ApiUserCreate {
   email: string
   password: string
   role: UserRole
-  department: string | null
+  department_id: string | null
 }
 
 export interface ApiUserUpdate {
   name?: string
   role?: UserRole
   is_active?: boolean
-  department?: string | null
+  department_id?: string | null
   password?: string
 }
 
 export async function fetchUsers(): Promise<ApiUser[]> {
-  return apiFetch<ApiUser[]>('/api/v1/users/')
+  return apiFetch<ApiUser[]>('/api/v1/users')
 }
 
 export async function createUser(payload: ApiUserCreate): Promise<ApiUser> {
-  return apiFetch<ApiUser>('/api/v1/users/', {
+  return apiFetch<ApiUser>('/api/v1/users', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -191,22 +229,18 @@ export async function deleteDelayJustification(id: string): Promise<void> {
 export async function updateInitiative(
   id: string,
   payload: Partial<{
-    responsible_sector: string
     name: string
     responsible_manager: string
     summary: string
     total_estimated_value: string | null
     current_year_estimated_value: string | null
+    department_id: string | null
   }>,
 ): Promise<BackendInitiativeDTO> {
   return apiFetch<BackendInitiativeDTO>(`/api/v1/initiatives/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   })
-}
-
-export async function deleteInitiative(id: string): Promise<void> {
-  await apiFetch<void>(`/api/v1/initiatives/${id}`, { method: 'DELETE' })
 }
 
 export async function updateKeyResult(

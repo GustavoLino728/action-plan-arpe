@@ -41,15 +41,23 @@ export interface BackendKeyResultDTO {
   steps?: BackendActionPlanStepDTO[]
 }
 
+export interface BackendDepartmentDTO {
+  id: string
+  name: string
+  acronym: string | null
+  is_oversight: boolean
+}
+
 export interface BackendInitiativeDTO {
   id: string
   strategic_objective_id: string
-  responsible_sector: string
   name: string
   responsible_manager: string
   summary: string
   total_estimated_value: string | null
   current_year_estimated_value: string | null
+  department_id: string | null
+  department: BackendDepartmentDTO | null
   key_results?: BackendKeyResultDTO[]
 }
 

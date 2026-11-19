@@ -79,6 +79,7 @@ def create_app() -> FastAPI:
     app.include_router(import_router)
     app.include_router(audit_router)
     app.include_router(step_comments_router)
+    app.include_router(departments_router)
 
     @app.exception_handler(AppException)
     async def app_exception_handler(request: Request, exc: AppException):
