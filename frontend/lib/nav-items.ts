@@ -1,5 +1,5 @@
 import type * as React from 'react'
-import { BarChart3, Building2Icon, FileText, LineChart, Upload, UsersIcon } from 'lucide-react'
+import { BarChart3, Building2Icon, FileText, LineChart, Upload, UsersIcon, CalendarIcon } from 'lucide-react'
 
 import type { UserSession } from '@/lib/api/client'
 import {
@@ -19,6 +19,7 @@ export const NAV_ITEMS: NavItem[] = [
   { name: 'Mapa Estratégico', href: '/', icon: BarChart3 },
   { name: 'Planos de Ação', href: '/planos', icon: FileText },
   { name: 'Relatórios', href: '/relatorios', icon: LineChart },
+  { name: 'Calendário', href: '/calendar', icon: CalendarIcon },
   { name: 'Carga de Planilhas', href: '/carga', icon: Upload, visivel: canImportSpreadsheet },
   { name: 'Usuários', href: '/usuarios', icon: UsersIcon, visivel: canManageUsers },
   { name: 'Setores', href: '/departments', icon: Building2Icon, visivel: canManageDepartments },
