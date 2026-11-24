@@ -10,6 +10,13 @@ from app.core.context import set_current_user_id
 from app.core.security import decode_access_token
 from app.database.session import get_db
 from app.domain.users.models import User
+from app.core.exceptions import ForbiddenError
+from app.core.permissions import (
+    can_import_spreadsheet,
+    can_manage_initiatives,
+    can_manage_objectives,
+    can_manage_perspectives,
+)
 
 DBSession = Annotated[AsyncSession, Depends(get_db)]
 
@@ -75,3 +82,22 @@ def require_role(role: str):
     return dependency
 
 AdminUser = Annotated[User, Depends(require_role("admin"))]
+
+async def require_can_manage_perspectives(current_user: CurrentUser) -> None:
+    if not can_manage_perspectives(current_user):
+        raise ForbiddenError("Sem permissão para gerenciar perspectivas")
+
+
+async def require_can_manage_objectives(current_user: CurrentUser) -> None:
+    if not can_manage_objectives(current_user):
+        raise ForbiddenError("Sem permissão para gerenciar objetivos")
+
+
+async def require_can_manage_initiatives(current_user: CurrentUser) -> None:
+    if not can_manage_initiatives(current_user):
+        raise ForbiddenError("Sem permissão para gerenciar iniciativas")
+
+
+async def require_can_import_spreadsheet(current_user: CurrentUser) -> None:
+    if not can_import_spreadsheet(current_user):
+        raise ForbiddenError("Sem permissão para importar planilhas")

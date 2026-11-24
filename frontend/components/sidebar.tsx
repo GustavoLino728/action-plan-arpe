@@ -2,25 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useDashboard } from '@/components/dashboard-provider'
+import { X } from 'lucide-react'
+
 import { useAuth } from '@/components/auth-provider'
-import { podeVerCarga } from '@/lib/roles'
-import { BarChart3, FileText, LineChart, Upload, User, X, Building2Icon} from 'lucide-react'
-
-type NavItem = {
-  name: string
-  href: string
-  icon: React.ComponentType<{ className?: string }>
-  visivel?: (role?: string | null) => boolean
-}
-
-const navItems: NavItem[] = [
-  { name: 'Mapa Estratégico', href: '/', icon: BarChart3 },
-  { name: 'Planos de Ação', href: '/planos', icon: FileText },
-  { name: 'Setores', href: '/departments', icon: Building2Icon, visivel: (r) => r === 'admin' },
-  { name: 'Usuários', href: '/usuarios', icon: User},
-  { name: 'Carga de Planilhas', href: '/carga', icon: Upload, visivel: podeVerCarga },
-]
+import { useDashboard } from '@/components/dashboard-provider'
+import { NAV_ITEMS } from '@/lib/nav-items'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -29,44 +15,46 @@ export function Sidebar() {
 
   const itensVisiveis = isLoading
     ? []
-    : navItems.filter((item) => (item.visivel ? item.visivel(user?.role) : true))
+    : NAV_ITEMS.filter((item) =>
+        item.visivel ? item.visivel(user) : true,
+      )
 
   return (
     <>
       {isMobileOpen && (
         <div
           onClick={() => setIsMobileOpen(false)}
-          className="fixed inset-0 bg-black/45 z-40 lg:hidden transition-opacity duration-300 cursor-pointer"
+          className="fixed inset-0 z-40 bg-black/45 transition-opacity duration-300 lg:hidden cursor-pointer"
         />
       )}
 
       <aside
-        className={`bg-sidebar text-[#C3D0DC] py-5 flex flex-col shrink-0 border-r border-line/10 h-full overflow-y-auto select-none transition-all duration-300 ease-in-out
+        className={`flex shrink-0 flex-col overflow-y-auto border-r border-line/10 bg-sidebar py-5 text-[#C3D0DC] select-none transition-all duration-300 ease-in-out
           lg:relative lg:z-30
           ${isDesktopOpen ? 'lg:w-[220px] lg:opacity-100 lg:pointer-events-auto' : 'lg:w-0 lg:opacity-0 lg:pointer-events-none lg:border-r-0 lg:py-0'}
           max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:w-[240px] max-lg:shadow-2xl
           ${isMobileOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'}
         `}
       >
-        <div className="px-5 pb-6 flex items-center justify-between max-lg:pb-4">
+        <div className="flex items-center justify-between px-5 pb-6 max-lg:pb-4">
           <Link href="/" className="flex items-center">
             <img
               src="/logo-arpe-negativo.png"
-              alt="ARPE MPE"
+              alt="ARPE MAP"
               className="h-10 w-auto object-contain"
             />
           </Link>
           <button
             onClick={() => setIsMobileOpen(false)}
             aria-label="Fechar menu"
-            className="lg:hidden p-1.5 rounded-lg text-[#8A9DB0] hover:text-white hover:bg-white/10 transition-colors focus:outline-none border-none bg-transparent cursor-pointer flex items-center justify-center"
+            className="flex items-center justify-center rounded-lg p-1.5 text-[#8A9DB0] transition-colors hover:bg-white/10 hover:text-white focus:outline-none border-none bg-transparent cursor-pointer lg:hidden"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <nav className="flex flex-col flex-1 gap-1">
-          <ul className="list-none m-0 p-0 flex flex-col w-full gap-1">
+        <nav className="flex flex-1 flex-col gap-1">
+          <ul className="m-0 flex w-full list-none flex-col gap-1 p-0">
             {itensVisiveis.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
@@ -74,9 +62,9 @@ export function Sidebar() {
                 <li key={item.href} className="w-full">
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-3 py-[9px] px-5 text-[13.5px] no-underline transition-all duration-150 rounded-lg mx-2 ${
+                    className={`mx-2 flex items-center gap-3 rounded-lg px-5 py-[9px] text-[13.5px] no-underline transition-all duration-150 ${
                       isActive
-                        ? 'text-white font-semibold'
+                        ? 'font-semibold text-white'
                         : 'text-[#8A9DB0] hover:text-[#C3D0DC]'
                     }`}
                   >

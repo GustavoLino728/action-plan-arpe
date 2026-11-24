@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.domain.departments.permissions import can_see_all_initiatives
+from app.core.permissions import can_view_all_initiatives
 from app.dependencies import DBSession, CurrentUser
 from app.domain.strategic_perspective.models import StrategicPerspective
 from app.domain.strategic_objective.models import StrategicObjective
@@ -27,7 +27,7 @@ async def get_strategic_map_tree(db: DBSession, current_user: CurrentUser):
     result = await db.execute(stmt)
     perspectives = list(result.scalars().all())
 
-    if not can_see_all_initiatives(current_user):
+    if not can_view_all_initiatives(current_user):
         user_dept = current_user.department_id
         for p in perspectives:
             for o in p.strategic_objectives:

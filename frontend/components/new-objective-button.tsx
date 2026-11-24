@@ -2,14 +2,20 @@
 
 import { PlusIcon } from 'lucide-react'
 import { usePlan } from '@/components/plan-provider'
-import { Button } from '@/components/button'
+import { PermissionedButton } from '@/components/permissioned-button'
+import { canManageObjectives } from '@/lib/roles'
 
 export function NewObjectiveButton() {
   const { openObjectiveForm } = usePlan()
   return (
-    <Button variant="outline" onClick={() => openObjectiveForm()}>
+    <PermissionedButton
+      variant="outline"
+      onClick={() => openObjectiveForm()}
+      check={canManageObjectives}
+      reason="Apenas administradores, diretores e membros do CGRP podem criar objetivos."
+    >
       <PlusIcon className="size-4" />
       Novo objetivo
-    </Button>
+    </PermissionedButton>
   )
 }
