@@ -133,7 +133,7 @@ export async function deleteDepartment(id: string): Promise<void> {
 }
 
 
-export type UserRole = 'servidor' | 'coordenador' | 'admin'
+export type UserRole = 'servidor' | 'coordenador' | 'diretor' | 'admin'
 
 export interface ApiUser {
   id: string
