@@ -274,6 +274,7 @@ export function mergeImport(current: PlanData, rows: ImportRow[], mode: 'append'
         descricao: r.descricao,
         valorTotal: r.valorTotal,
         valor2026: r.valor2026,
+        departmentId: null,
       }
       data.iniciativas.push(ini)
       summary.iniciativas++
