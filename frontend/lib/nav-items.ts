@@ -18,7 +18,7 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { name: 'Mapa Estratégico', href: '/', icon: BarChart3 },
   { name: 'Planos de Ação', href: '/planos', icon: FileText },
-  { name: 'Relatórios', href: '/relatorios', icon: LineChart },
+  { name: 'Dashboard', href: '/dashboard', icon: LineChart },
   { name: 'Calendário', href: '/calendar', icon: CalendarIcon },
   { name: 'Carga de Planilhas', href: '/planilhas', icon: Upload, visivel: canImportSpreadsheet },
   { name: 'Usuários', href: '/usuarios', icon: UsersIcon, visivel: canManageUsers },
