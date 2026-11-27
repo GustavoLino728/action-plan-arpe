@@ -699,6 +699,8 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       closeObjectiveForm: () => setObjectiveForm(null),
       uploadOpen,
       setUploadOpen,
+      importsVersion,
+      bumpImportsVersion,
     }),
     [
       iniciativas,
