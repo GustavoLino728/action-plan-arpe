@@ -74,10 +74,80 @@ export function DashboardOverview() {
 
   if (loading && !data) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-[90px] rounded-custom border border-line/30 animate-pulse" />
-        ))}
+      <div className="flex flex-col gap-5">
+        {/* Cards skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={`card-skel-${i}`}
+              className="rounded-custom border border-line/30 p-4 flex flex-col gap-2 animate-pulse"
+            >
+              <div className="h-3 w-20 rounded bg-line/40" />
+              <div className="h-7 w-12 rounded bg-line/40" />
+              <div className="h-2 w-24 rounded bg-line/30" />
+            </div>
+          ))}
+        </div>
+
+        {/* Contadores auxiliares skeleton */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 animate-pulse">
+          <div className="h-3 w-20 rounded bg-line/30" />
+          <div className="h-3 w-24 rounded bg-line/30" />
+          <div className="h-3 w-28 rounded bg-line/30" />
+        </div>
+
+        {/* Tabela skeleton */}
+        <section className="bg-panel border border-line/30 rounded-custom p-5">
+          <div className="mb-3 flex flex-col gap-1.5">
+            <div className="h-4 w-40 rounded bg-line/40 animate-pulse" />
+            <div className="h-3 w-56 rounded bg-line/30 animate-pulse" />
+          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Farol</TableHead>
+                <TableHead>Coord.</TableHead>
+                <TableHead>KR</TableHead>
+                <TableHead>Iniciativa</TableHead>
+                <TableHead className="text-right">Progresso</TableHead>
+                <TableHead className="text-right">Esperado</TableHead>
+                <TableHead className="text-right">Desvio</TableHead>
+                <TableHead className="text-right">Prazo</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={`row-skel-${i}`}>
+                  <TableCell>
+                    <div className="h-5 w-16 rounded-full bg-line/40 animate-pulse" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="h-3 w-12 rounded bg-line/30 animate-pulse" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="h-3 w-10 rounded bg-line/30 animate-pulse" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="h-3 w-40 rounded bg-line/30 animate-pulse" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="ml-auto h-3 w-10 rounded bg-line/30 animate-pulse" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="ml-auto h-3 w-10 rounded bg-line/30 animate-pulse" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="ml-auto h-3 w-12 rounded bg-line/30 animate-pulse" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="ml-auto h-3 w-14 rounded bg-line/30 animate-pulse" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </section>
       </div>
     )
   }
