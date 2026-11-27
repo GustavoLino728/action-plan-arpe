@@ -2,6 +2,7 @@
 
 import { AlertTriangleIcon, CircleSlashIcon, ListChecksIcon, RefreshCwIcon } from 'lucide-react'
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/button'
 import { FarolCard } from '@/components/farol-card'
 import {
@@ -49,6 +50,8 @@ function daysTone(n: number): string {
 }
 
 export function DashboardOverview() {
+    
+    const router = useRouter()
   const [data, setData] = React.useState<DashboardOverview | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -159,38 +162,62 @@ export function DashboardOverview() {
                 </TableCell>
               </TableRow>
             ) : (
-              krs_alerta.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>
-                    <span
-                      className={cn(
-                        'inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium',
-                        farolBadgeClasses(row.farol),
-                      )}
-                    >
-                      {FAROL_LABEL[row.farol]}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-[13px]">{row.department_name ?? '—'}</TableCell>
-                  <TableCell className="text-[13px] whitespace-nowrap">{row.code}</TableCell>
-                  <TableCell className="text-[13px] text-ink-soft max-w-[240px] truncate" title={row.name}>
-                    {row.name}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{numberFmt.format(row.percentage_progress)}%</TableCell>
-                  <TableCell className="text-right tabular-nums text-ink-soft">{numberFmt.format(row.expected_progress)}%</TableCell>
-                  <TableCell
+              krs_alerta.map((row) => {
+                const target = row.initiative_id ? `/planos/${row.initiative_id}` : null
+                const handleClick = () => {
+                    if (target) router.push(target)
+                }
+                const handleKeyDown = (e: React.KeyboardEvent<HTMLTableRowElement>) => {
+                    if (!target) return
+                    if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    router.push(target)
+                    }
+                }
+
+                return (
+                    <TableRow
+                    key={row.id}
+                    onClick={target ? handleClick : undefined}
+                    onKeyDown={target ? handleKeyDown : undefined}
+                    tabIndex={target ? 0 : undefined}
+                    role={target ? 'link' : undefined}
+                    aria-label={target ? `Abrir plano da iniciativa ${row.initiative_name}` : undefined}
                     className={cn(
-                      'text-right tabular-nums font-medium',
-                      row.deviation_pp < 0 ? 'text-danger' : 'text-success',
+                        target && 'cursor-pointer focus:outline-none focus-visible:bg-line/10',
                     )}
-                  >
-                    {row.deviation_pp > 0 ? '+' : ''}{numberFmt.format(row.deviation_pp)}pp
-                  </TableCell>
-                  <TableCell className={cn('text-right tabular-nums text-[12px]', daysTone(row.days_to_deadline))}>
-                    {formatDays(row.days_to_deadline)}
-                  </TableCell>
-                </TableRow>
-              ))
+                    >
+                    <TableCell>
+                        <span
+                        className={cn(
+                            'inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                            farolBadgeClasses(row.farol),
+                        )}
+                        >
+                        {FAROL_LABEL[row.farol]}
+                        </span>
+                    </TableCell>
+                    <TableCell className="text-[13px]">{row.department_name ?? '—'}</TableCell>
+                    <TableCell className="text-[13px] whitespace-nowrap">{row.code}</TableCell>
+                    <TableCell className="text-[13px] text-ink-soft max-w-[240px] truncate" title={row.name}>
+                        {row.name}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{numberFmt.format(row.percentage_progress)}%</TableCell>
+                    <TableCell className="text-right tabular-nums text-ink-soft">{numberFmt.format(row.expected_progress)}%</TableCell>
+                    <TableCell
+                        className={cn(
+                        'text-right tabular-nums font-medium',
+                        row.deviation_pp < 0 ? 'text-danger' : 'text-success',
+                        )}
+                    >
+                        {row.deviation_pp > 0 ? '+' : ''}{numberFmt.format(row.deviation_pp)}pp
+                    </TableCell>
+                    <TableCell className={cn('text-right tabular-nums text-[12px]', daysTone(row.days_to_deadline))}>
+                        {formatDays(row.days_to_deadline)}
+                    </TableCell>
+                    </TableRow>
+                )
+                })
             )}
           </TableBody>
         </Table>

@@ -16,6 +16,9 @@ export interface KrAlert {
   id: string
   code: string
   name: string
+
+  initiative_id: string | null
+
   initiative_name: string
   department_id: string | null
   department_name: string | null

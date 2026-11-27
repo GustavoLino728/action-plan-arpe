@@ -23,6 +23,9 @@ class KrAlert(BaseModel):
     id: UUID
     code: str
     name: str
+
+    initiative_id: UUID | None
+
     initiative_name: str
     department_id: UUID | None
     department_name: str | None
@@ -31,7 +34,7 @@ class KrAlert(BaseModel):
     deviation_pp: int
     days_to_deadline: int
     farol: Farol
-
+    
 
 class DashboardOverview(BaseModel):
     cards: DashboardCards

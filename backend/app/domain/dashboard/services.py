@@ -208,6 +208,7 @@ async def get_overview(
                 id=kr.id,
                 code=kr.code,
                 name=kr.name,
+                initiative_id=initiative.id if initiative else None,
                 initiative_name=initiative.name if initiative else "—",
                 department_id=department.id if department else None,
                 department_name=department.name if department else None,
