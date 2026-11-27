@@ -4,6 +4,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 
 import { apiFetch } from '@/lib/api/client'
+import { getStoredUser, type AuthUser } from '@/lib/auth'
 import { toBackendStatus } from '@/lib/api/mappers'
 import { API_ENDPOINTS } from '@/lib/api/endpoints'
 import type {
@@ -88,6 +89,7 @@ interface PlanContextValue {
   responsaveis: string[]
   departments: ApiDepartment[]
   treeRaw: BackendStrategicPerspectiveDTO[]
+  currentUser: AuthUser | null
 
   query: string
   setQuery: (q: string) => void
@@ -181,6 +183,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   const [objectiveForm, setObjectiveForm] = React.useState<ObjectiveFormState>(null)
   const [uploadOpen, setUploadOpen] = React.useState(false)
   const [departments, setDepartments] = React.useState<ApiDepartment[]>([])
+  const [currentUser, setCurrentUser] = React.useState<AuthUser | null>(null)
 
   const [importsVersion, setImportsVersion] = React.useState(0)
   const bumpImportsVersion = React.useCallback(() => {
@@ -207,6 +210,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   React.useEffect(() => {
+    setCurrentUser(getStoredUser())
     if (typeof window !== 'undefined') {
       loadPlan()
     }
@@ -647,6 +651,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       responsaveis,
       treeRaw,
       departments,
+      currentUser,
       query,
       setQuery,
       filters,
@@ -710,6 +715,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       responsaveis,
       treeRaw,
       departments,
+      currentUser,
       query,
       filters,
       resetFilters,

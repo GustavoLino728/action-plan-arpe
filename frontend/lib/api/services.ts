@@ -243,6 +243,10 @@ export async function updateInitiative(
   })
 }
 
+export async function deleteInitiative(id: string): Promise<void> {
+  await apiFetch<void>(`/api/v1/initiatives/${id}`, { method: 'DELETE' })
+}
+
 export async function updateKeyResult(
   id: string,
   payload: Partial<{
