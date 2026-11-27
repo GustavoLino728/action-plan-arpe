@@ -2,6 +2,8 @@
 
 import {
   ArrowLeftIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
   EyeIcon,
   ListPlusIcon,
   PencilIcon,
@@ -84,11 +86,34 @@ export function IniciativaDetail({ id }: { id: string }) {
   const router = useRouter()
   const [pending, setPending] = React.useState<Pending>(null)
 
+  // ───── Accordion de KRs ─────
+  // Guardamos os COLAPSADOS (não os expandidos) para que novos KRs
+  // adicionados via loadPlan já apareçam expandidos por padrão.
+  const [collapsedKrs, setCollapsedKrs] = React.useState<Set<string>>(new Set())
+
   const iniciativa = iniciativas.find((i) => i.id === id)
   const node = React.useMemo(
     () => (iniciativa ? buildIniciativaNodes([iniciativa], krs, rows)[0] : null),
     [iniciativa, krs, rows],
   )
+
+  const toggleKr = React.useCallback((krId: string) => {
+    setCollapsedKrs((prev) => {
+      const next = new Set(prev)
+      if (next.has(krId)) next.delete(krId)
+      else next.add(krId)
+      return next
+    })
+  }, [])
+
+  const collapseAll = React.useCallback(() => {
+    if (!node) return
+    setCollapsedKrs(new Set(node.krs.map((k) => k.kr.id)))
+  }, [node])
+
+  const expandAll = React.useCallback(() => {
+    setCollapsedKrs(new Set())
+  }, [])
 
   if (loading && !iniciativa) {
     return (
@@ -121,6 +146,8 @@ export function IniciativaDetail({ id }: { id: string }) {
 
   const progress = averageProgress(node.etapas)
   const counts = countByStatus(node.etapas)
+  const allCollapsed =
+    node.krs.length > 0 && node.krs.every((k) => collapsedKrs.has(k.kr.id))
 
   const pendingCopy = (() => {
     if (!pending) return { title: '', description: '' }
@@ -229,9 +256,30 @@ export function IniciativaDetail({ id }: { id: string }) {
       </Card>
 
       <section aria-label="KRs da iniciativa" className="flex flex-col gap-4">
-        <h2 className="text-base font-semibold text-ink">
-          KRs e etapas ({node.krs.length})
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-ink">
+            KRs e etapas ({node.krs.length})
+          </h2>
+          {node.krs.length > 1 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={allCollapsed ? expandAll : collapseAll}
+            >
+              {allCollapsed ? (
+                <>
+                  <ChevronDownIcon className="size-4" />
+                  Expandir todos
+                </>
+              ) : (
+                <>
+                  <ChevronRightIcon className="size-4" />
+                  Colapsar todos
+                </>
+              )}
+            </Button>
+          )}
+        </div>
 
         {node.krs.length === 0 && (
           <Empty className="rounded-lg border border-line bg-panel">
@@ -248,158 +296,221 @@ export function IniciativaDetail({ id }: { id: string }) {
           </Empty>
         )}
 
-        {node.krs.map(({ kr, etapas: krEtapas }) => (
-          <Card key={kr.id}>
-            <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
-              <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className="text-[11px] font-medium tracking-wide text-ink-soft uppercase">
-                  KR · Setor {kr.setor || 'não informado'}
-                </span>
-                <CardTitle className="text-base text-balance">{kr.nome}</CardTitle>
-                {kr.responsavel && (
-                  <span className="text-xs text-ink-soft">Responsável: {kr.responsavel}</span>
-                )}
-                {(kr.dataInicio || kr.dataTermino) && (
-                  <span className="text-xs text-ink-soft">
-                    {kr.dataInicio && `Início ${formatDate(kr.dataInicio)}`}
-                    {kr.dataInicio && kr.dataTermino && ' · '}
-                    {kr.dataTermino && `Término ${formatDate(kr.dataTermino)}`}
-                  </span>
-                )}
-                <ProgressBar
-                  value={averageProgress(krEtapas)}
-                  showLabel
-                  className="max-w-xs"
-                  label={`Progresso do KR ${kr.nome}`}
-                />
-              </div>
-              <div className="flex flex-wrap items-center gap-1">
-                <Button size="sm" onClick={() => openCreateEtapa(kr.id)}>
-                  <ListPlusIcon className="size-4" />
-                  Nova etapa
-                </Button>
-                <IconAction
-                  label="Editar KR"
-                  onClick={() => openKrForm(iniciativa.id, kr.id)}
-                >
-                  <PencilIcon />
-                </IconAction>
-                <IconAction
-                  label="Excluir KR"
-                  destructive
-                  onClick={() => setPending({ type: 'kr', kr })}
-                >
-                  <Trash2Icon />
-                </IconAction>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {krEtapas.length === 0 ? (
-                <p className="rounded-md border border-dashed border-line px-3 py-4 text-center text-sm text-ink-soft">
-                  Nenhuma etapa neste KR. Use &ldquo;Nova etapa&rdquo; para cadastrar.
-                </p>
-              ) : (
-                <div className="overflow-hidden rounded-md border border-line">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-line/10 hover:bg-line/10">
-                        <TableHead className="w-12">Nº</TableHead>
-                        <TableHead className="min-w-56">Nome da etapa</TableHead>
-                        <TableHead>Responsável</TableHead>
-                        <TableHead>Início</TableHead>
-                        <TableHead>Término</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="min-w-32">Previsto</TableHead>
-                        <TableHead className="min-w-32">Realizado</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {krEtapas.map((e) => {
-                        const status = effectiveStatus(e)
-                        const deadline = deadlineInfo(e)
-                        const just = justSummary[e.id]
-                        return (
-                          <TableRow key={e.id}>
-                            <TableCell className="tabular-nums text-ink-soft">{e.numero}</TableCell>
-                            <TableCell className="max-w-72 whitespace-normal">
-                              <div className="flex flex-col gap-1">
-                                <span className="font-medium">{e.nome}</span>
-                                {status === 'atrasado' && (
-                                  <button
-                                    type="button"
-                                    onClick={() => openView(e.id, 'justificativas')}
-                                    className="w-fit rounded-sm text-left text-xs font-medium text-rose-600 underline-offset-4 outline-none hover:underline dark:text-rose-400"
-                                  >
-                                    {just
-                                      ? `${just.total} justificativa(s) · ${just.abertas} em aberto`
-                                      : 'Registrar justificativa de atraso'}
-                                  </button>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-ink-soft">{e.responsavel}</TableCell>
-                            <TableCell className="tabular-nums">{formatDate(e.dataInicio)}</TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="tabular-nums">{formatDate(e.dataTermino)}</span>
-                                <span className={cn('text-xs font-medium', TONE_TEXT[deadline.tone])}>
-                                  {deadline.label}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <StatusBadge status={status} />
-                            </TableCell>
-                            <TableCell>
-                              <ProgressBar
-                                value={e.previsto}
-                                tone="muted"
-                                showLabel
-                                label={`Previsto da etapa ${e.nome}`}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <ProgressBar
-                                value={e.realizado}
-                                tone={
-                                  status === 'atrasado'
-                                    ? 'danger'
-                                    : status === 'concluido'
-                                      ? 'success'
-                                      : 'info'
-                                }
-                                showLabel
-                                label={`Realizado da etapa ${e.nome}`}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-end gap-0.5">
-                                <IconAction label="Ver detalhes" onClick={() => openView(e.id)}>
-                                  <EyeIcon />
-                                </IconAction>
-                                <IconAction label="Editar etapa" onClick={() => openEdit(e.id)}>
-                                  <PencilIcon />
-                                </IconAction>
-                                <IconAction
-                                  label="Excluir etapa"
-                                  destructive
-                                  onClick={() => setPending({ type: 'etapa', etapa: e })}
-                                >
-                                  <Trash2Icon />
-                                </IconAction>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
+        {node.krs.map(({ kr, etapas: krEtapas }) => {
+          const isCollapsed = collapsedKrs.has(kr.id)
+          const contentId = `kr-content-${kr.id}`
+
+          return (
+            <Card key={kr.id}>
+              <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-1 items-start gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleKr(kr.id)}
+                    aria-expanded={!isCollapsed}
+                    aria-controls={contentId}
+                    aria-label={
+                      isCollapsed
+                        ? `Expandir KR ${kr.nome}`
+                        : `Colapsar KR ${kr.nome}`
+                    }
+                    className={cn(
+                      'mt-0.5 -ml-1 rounded-md p-1 text-ink-soft transition-colors',
+                      'hover:bg-line/20 hover:text-ink',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    )}
+                  >
+                    {isCollapsed ? (
+                      <ChevronRightIcon className="size-4" />
+                    ) : (
+                      <ChevronDownIcon className="size-4" />
+                    )}
+                  </button>
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="text-[11px] font-medium tracking-wide text-ink-soft uppercase">
+                      KR · Setor {kr.setor || 'não informado'}
+                    </span>
+                    <CardTitle className="text-base text-balance">{kr.nome}</CardTitle>
+                    {kr.responsavel && (
+                      <span className="text-xs text-ink-soft">
+                        Responsável: {kr.responsavel}
+                      </span>
+                    )}
+                    {(kr.dataInicio || kr.dataTermino) && (
+                      <span className="text-xs text-ink-soft">
+                        {kr.dataInicio && `Início ${formatDate(kr.dataInicio)}`}
+                        {kr.dataInicio && kr.dataTermino && ' · '}
+                        {kr.dataTermino && `Término ${formatDate(kr.dataTermino)}`}
+                      </span>
+                    )}
+                    <ProgressBar
+                      value={averageProgress(krEtapas)}
+                      showLabel
+                      className="max-w-xs"
+                      label={`Progresso do KR ${kr.nome}`}
+                    />
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+                <div className="flex flex-wrap items-center gap-1">
+                  <Button size="sm" onClick={() => openCreateEtapa(kr.id)}>
+                    <ListPlusIcon className="size-4" />
+                    Nova etapa
+                  </Button>
+                  <IconAction
+                    label="Editar KR"
+                    onClick={() => openKrForm(iniciativa.id, kr.id)}
+                  >
+                    <PencilIcon />
+                  </IconAction>
+                  <IconAction
+                    label="Excluir KR"
+                    destructive
+                    onClick={() => setPending({ type: 'kr', kr })}
+                  >
+                    <Trash2Icon />
+                  </IconAction>
+                </div>
+              </CardHeader>
+
+              {/* Accordion: grid-rows anima altura sem JS */}
+              <div
+                id={contentId}
+                className={cn(
+                  'grid transition-all duration-200 ease-out',
+                  isCollapsed
+                    ? 'grid-rows-[0fr] opacity-0'
+                    : 'grid-rows-[1fr] opacity-100',
+                )}
+                aria-hidden={isCollapsed}
+              >
+                <div className="overflow-hidden">
+                  <CardContent>
+                    {krEtapas.length === 0 ? (
+                      <p className="rounded-md border border-dashed border-line px-3 py-4 text-center text-sm text-ink-soft">
+                        Nenhuma etapa neste KR. Use &ldquo;Nova etapa&rdquo; para cadastrar.
+                      </p>
+                    ) : (
+                      <div className="overflow-hidden rounded-md border border-line">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-line/10 hover:bg-line/10">
+                              <TableHead className="w-12">Nº</TableHead>
+                              <TableHead className="min-w-56">Nome da etapa</TableHead>
+                              <TableHead>Responsável</TableHead>
+                              <TableHead>Início</TableHead>
+                              <TableHead>Término</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="min-w-32">Previsto</TableHead>
+                              <TableHead className="min-w-32">Realizado</TableHead>
+                              <TableHead className="text-right">Ações</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {krEtapas.map((e) => {
+                              const status = effectiveStatus(e)
+                              const deadline = deadlineInfo(e)
+                              const just = justSummary[e.id]
+                              return (
+                                <TableRow key={e.id}>
+                                  <TableCell className="tabular-nums text-ink-soft">
+                                    {e.numero}
+                                  </TableCell>
+                                  <TableCell className="max-w-72 whitespace-normal">
+                                    <div className="flex flex-col gap-1">
+                                      <span className="font-medium">{e.nome}</span>
+                                      {status === 'atrasado' && (
+                                        <button
+                                          type="button"
+                                          onClick={() => openView(e.id, 'justificativas')}
+                                          className="w-fit rounded-sm text-left text-xs font-medium text-rose-600 underline-offset-4 outline-none hover:underline dark:text-rose-400"
+                                        >
+                                          {just
+                                            ? `${just.total} justificativa(s) · ${just.abertas} em aberto`
+                                            : 'Registrar justificativa de atraso'}
+                                        </button>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-ink-soft">{e.responsavel}</TableCell>
+                                  <TableCell className="tabular-nums">
+                                    {formatDate(e.dataInicio)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col">
+                                      <span className="tabular-nums">
+                                        {formatDate(e.dataTermino)}
+                                      </span>
+                                      <span
+                                        className={cn(
+                                          'text-xs font-medium',
+                                          TONE_TEXT[deadline.tone],
+                                        )}
+                                      >
+                                        {deadline.label}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <StatusBadge status={status} />
+                                  </TableCell>
+                                  <TableCell>
+                                    <ProgressBar
+                                      value={e.previsto}
+                                      tone="muted"
+                                      showLabel
+                                      label={`Previsto da etapa ${e.nome}`}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <ProgressBar
+                                      value={e.realizado}
+                                      tone={
+                                        status === 'atrasado'
+                                          ? 'danger'
+                                          : status === 'concluido'
+                                            ? 'success'
+                                            : 'info'
+                                      }
+                                      showLabel
+                                      label={`Realizado da etapa ${e.nome}`}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex justify-end gap-0.5">
+                                      <IconAction
+                                        label="Ver detalhes"
+                                        onClick={() => openView(e.id)}
+                                      >
+                                        <EyeIcon />
+                                      </IconAction>
+                                      <IconAction
+                                        label="Editar etapa"
+                                        onClick={() => openEdit(e.id)}
+                                      >
+                                        <PencilIcon />
+                                      </IconAction>
+                                      <IconAction
+                                        label="Excluir etapa"
+                                        destructive
+                                        onClick={() => setPending({ type: 'etapa', etapa: e })}
+                                      >
+                                        <Trash2Icon />
+                                      </IconAction>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </div>
+              </div>
+            </Card>
+          )
+        })}
       </section>
 
       <ConfirmDelete
