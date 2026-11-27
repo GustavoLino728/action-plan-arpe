@@ -22,25 +22,17 @@ import {
   DialogTitle,
 } from '@/components/dialog'
 import { cn } from '@/lib/utils'
-import { API_BASE_URL, getStoredToken } from '@/lib/api/client'
+import { apiFetch } from '@/lib/api/client'
+import { previewImport, commitImport, type ImportCommitResponse } from '@/lib/api/import'
 
 type Step = 'arquivo' | 'validacao'
 
-type ValidatedRow = Record<string, unknown>
+export type ValidatedRow = Record<string, unknown>
 type PreviewIssue = { line: number; field?: string | null; message: string }
 type PreviewResponse = {
   valid_rows: ValidatedRow[]
   issues: PreviewIssue[]
   summary: { total_lines: number; valid: number; invalid: number }
-}
-type ImportCommitResponse = {
-  strategic_perspectives_created: number
-  strategic_objectives_created: number
-  initiatives_created: number
-  key_results_created: number
-  steps_upserted: number
-  steps_deleted: number
-  justificativas_upserted: number
 }
 
 const STEPS: { id: Step; label: string }[] = [
@@ -77,28 +69,12 @@ export function UploadDialog() {
     setLoading(true)
     setError(null)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      const token = getStoredToken()
-      const res = await fetch(`${API_BASE_URL}/api/v1/import/preview`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      })
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}))
-        throw new Error(
-          typeof errJson.detail === 'string'
-            ? errJson.detail
-            : `Falha ao processar (${res.status})`,
-        )
-      }
-      const data = (await res.json()) as PreviewResponse
+      const data = await previewImport(file)
       setFileName(file.name)
       setResult(data)
       setStep('validacao')
-    } catch (err: any) {
-      setError(err.message || 'Falha ao processar planilha no servidor.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao processar planilha.')
     } finally {
       setLoading(false)
     }
@@ -108,30 +84,17 @@ export function UploadDialog() {
     if (!result || result.valid_rows.length === 0) return
     setImporting(true)
     try {
-      const token = getStoredToken()
-      const res = await fetch(`${API_BASE_URL}/api/v1/import/commit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ rows: result.valid_rows, mode }),
+      const summary = await commitImport({
+        rows: result.valid_rows,
+        mode,
+        source_file_name: fileName,
       })
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}))
-        throw new Error(
-          typeof errJson.detail === 'string'
-            ? errJson.detail
-            : `Falha ao importar (${res.status})`,
-        )
-      }
-      const summary = (await res.json()) as ImportCommitResponse
       const n = summary.steps_upserted
       toast.success(`${n} ${n === 1 ? 'etapa importada' : 'etapas importadas'} com sucesso.`)
       setUploadOpen(false)
       await reload?.()
-    } catch (err: any) {
-      toast.error(err.message || 'Falha ao importar no servidor. Tente novamente.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Falha ao importar.')
     } finally {
       setImporting(false)
     }

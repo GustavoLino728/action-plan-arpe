@@ -71,14 +71,19 @@ export async function login(email: string, password: string) {
   return data
 }
 
-export async function apiFetch<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
+export async function apiFetch<T = unknown>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
   const token = getStoredToken()
-  
+
+  const isFormData = options.body instanceof FormData
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    ...(options.headers as Record<string, string> | undefined),
   }
-  
+
   if (token) {
     headers.Authorization = `Bearer ${token}`
   }
@@ -90,7 +95,10 @@ export async function apiFetch<T = unknown>(endpoint: string, options: RequestIn
 
   if (res.status === 401) {
     clearStoredTokens()
-    if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+    if (
+      typeof window !== 'undefined' &&
+      !window.location.pathname.includes('/login')
+    ) {
       window.location.href = '/login'
     }
     throw new Error('Sessão expirada. Faça login novamente.')
@@ -98,12 +106,13 @@ export async function apiFetch<T = unknown>(endpoint: string, options: RequestIn
 
   if (!res.ok) {
     const errJson = await res.json().catch(() => null)
-    const message = errJson?.detail || `Erro na requisição ${endpoint}: status ${res.status}`
+    const message =
+      errJson?.detail || `Erro na requisição ${endpoint}: status ${res.status}`
     throw new Error(typeof message === 'string' ? message : JSON.stringify(message))
   }
 
   if (res.status === 204) return null as T
-  return res.json()
+  return res.json() as Promise<T>
 }
 
 export async function getMe(): Promise<UserSession> {

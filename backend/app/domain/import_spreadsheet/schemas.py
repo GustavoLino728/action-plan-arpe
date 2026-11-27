@@ -1,7 +1,8 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Literal
+from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ImportPreviewResponse(BaseModel):
@@ -59,6 +60,7 @@ class ValidatedRow(BaseModel):
 class ImportCommitRequest(BaseModel):
     rows: list[ValidatedRow]
     mode: Literal["append", "replace"] = "append"
+    source_file_name: str | None = None
 
 
 class ImportCommitResponse(BaseModel):
@@ -69,3 +71,33 @@ class ImportCommitResponse(BaseModel):
     steps_upserted: int
     steps_deleted: int
     justificativas_upserted: int
+    import_id: UUID
+    
+
+class ImportUploadOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_id: UUID | None
+    user_name: str
+    source_file_name: str | None
+    mode: str
+    strategic_perspectives_created: int
+    strategic_objectives_created: int
+    initiatives_created: int
+    key_results_created: int
+    steps_upserted: int
+    steps_deleted: int
+    justificativas_upserted: int
+    duration_ms: int | None
+    request_id: str | None
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class ImportUploadList(BaseModel):
+    items: list[ImportUploadOut]
+    total: int
+    page: int
+    page_size: int

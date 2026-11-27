@@ -5,7 +5,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/components/auth-provider'
 
 export const metadata: Metadata = {
-  title: 'ARPE-MAP',
+  title: 'MPE',
   description: 'Monitoramento dos Planos de Ação e Planejamento Estratégico',
 }
 

@@ -145,6 +145,11 @@ interface PlanContextValue {
 
   uploadOpen: boolean
   setUploadOpen: (open: boolean) => void
+
+  /** Contador que incrementa a cada importação concluída com sucesso.
+   *  Use como `reloadKey` em tabelas de histórico (ImportHistoryTable). */
+  importsVersion: number
+  bumpImportsVersion: () => void
 }
 
 const PlanContext = React.createContext<PlanContextValue | null>(null)
@@ -176,6 +181,11 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   const [objectiveForm, setObjectiveForm] = React.useState<ObjectiveFormState>(null)
   const [uploadOpen, setUploadOpen] = React.useState(false)
   const [departments, setDepartments] = React.useState<ApiDepartment[]>([])
+
+  const [importsVersion, setImportsVersion] = React.useState(0)
+  const bumpImportsVersion = React.useCallback(() => {
+    setImportsVersion((v) => v + 1)
+  }, [])
 
   const loadPlan = React.useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -731,6 +741,8 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       perspectiveForm,
       objectiveForm,
       uploadOpen,
+      importsVersion,
+      bumpImportsVersion,
     ],
   )
 

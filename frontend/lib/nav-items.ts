@@ -20,7 +20,7 @@ export const NAV_ITEMS: NavItem[] = [
   { name: 'Planos de Ação', href: '/planos', icon: FileText },
   { name: 'Relatórios', href: '/relatorios', icon: LineChart },
   { name: 'Calendário', href: '/calendar', icon: CalendarIcon },
-  { name: 'Carga de Planilhas', href: '/carga', icon: Upload, visivel: canImportSpreadsheet },
+  { name: 'Carga de Planilhas', href: '/planilhas', icon: Upload, visivel: canImportSpreadsheet },
   { name: 'Usuários', href: '/usuarios', icon: UsersIcon, visivel: canManageUsers },
   { name: 'Setores', href: '/departments', icon: Building2Icon, visivel: canManageDepartments },
 ]

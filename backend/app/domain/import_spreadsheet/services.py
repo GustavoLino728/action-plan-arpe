@@ -1,9 +1,12 @@
-from datetime import date
+from uuid import UUID
 
-from sqlalchemy import delete, select
+from datetime import date, datetime, timezone
+
+from sqlalchemy import delete, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.import_spreadsheet.schemas import ValidatedRow
+from app.domain.import_spreadsheet.models import ImportMode, ImportUpload
 from app.domain.action_plan_step.models import ActionPlanStep, StepStatus
 from app.domain.delay_justification.models import DelayJustification
 from app.domain.key_result.models import KeyResult
@@ -226,3 +229,57 @@ async def commit_import(
                 counts["justificativas_upserted"] += 1
 
     return counts
+
+
+async def record_import(
+    db: AsyncSession,
+    *,
+    user,
+    source_file_name: str | None,
+    mode: str,
+    counts: dict[str, int],
+    duration_ms: int,
+    request_id: str | None,
+) -> ImportUpload:
+    """Cria registro append-only de um commit de importação bem-sucedido.
+    Não faz commit — o chamador (router) fecha a transação junto com o commit
+    do próprio commit_import, garantindo atomicidade.
+    """
+    upload = ImportUpload(
+        user_id=user.id,
+        user_name=user.name,
+        source_file_name=source_file_name,
+        mode=ImportMode(mode),
+        duration_ms=duration_ms,
+        request_id=request_id,
+        **counts,  # chaves batem 1:1 com as colunas
+    )
+    db.add(upload)
+    await db.flush()
+    return upload
+
+
+async def list_imports(
+    db: AsyncSession,
+    *,
+    page: int = 1,
+    page_size: int = 20,
+    user_id: UUID | None = None,
+    mode: str | None = None,
+) -> tuple[list[ImportUpload], int]:
+    stmt = select(ImportUpload)
+    if user_id:
+        stmt = stmt.where(ImportUpload.user_id == user_id)
+    if mode:
+        stmt = stmt.where(ImportUpload.mode == ImportMode(mode))
+
+    total = await db.scalar(
+        select(func.count()).select_from(stmt.subquery())
+    ) or 0
+
+    rows = await db.scalars(
+        stmt.order_by(ImportUpload.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+    )
+    return list(rows.all()), total
