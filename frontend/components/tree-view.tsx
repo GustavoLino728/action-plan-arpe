@@ -34,6 +34,7 @@ function NodeSummary({ etapas, krCount }: { etapas: EtapaRowData[]; krCount?: nu
 const pId = (p: string) => `p:${p}`
 const oId = (p: string, o: string) => `o:${p}/${o}`
 const iId = (id: string) => `i:${id}`
+const kId = (id: string) => `k:${id}`
 
 export function TreeView() {
   const { filtered, scopeIniciativas, scopeKrs, searching, loading } = usePlan()
@@ -45,13 +46,18 @@ export function TreeView() {
       ids.push(pId(p.nome))
       for (const o of p.objetivos) {
         ids.push(oId(p.nome, o.nome))
-        for (const i of o.iniciativas) ids.push(iId(i.iniciativa.id))
+        for (const i of o.iniciativas) {
+          ids.push(iId(i.iniciativa.id))
+          for (const { kr } of i.krs) ids.push(kId(kr.id))
+        }
       }
     }
     return ids
   }, [tree])
 
-  const [openIds, setOpenIds] = React.useState<string[]>(() => allIds.filter((id) => id.startsWith('p:') || id.startsWith('o:')))
+  const [openIds, setOpenIds] = React.useState<string[]>(() =>
+    allIds.filter((id) => id.startsWith('p:') || id.startsWith('o:')),
+  )
 
   React.useEffect(() => {
     if (searching) setOpenIds(allIds)
@@ -128,66 +134,90 @@ export function TreeView() {
                         </AccordionTrigger>
                         <AccordionContent className="px-2 pb-2">
                           <Accordion multiple value={openIds.filter((id) => iIds.includes(id))} onValueChange={levelChange(iIds)} className="gap-1.5">
-                            {o.iniciativas.map(({ iniciativa, krs, etapas }) => (
-                              <AccordionItem key={iniciativa.id} value={iId(iniciativa.id)} className="rounded-md border border-dashed border-line bg-panel">
-                                <AccordionTrigger className="items-center rounded-md px-3 py-2 hover:no-underline">
-                                  <span className="flex min-w-0 flex-col text-left">
-                                    <span className="text-[11px] font-medium tracking-wide text-ink-soft uppercase">Iniciativa</span>
-                                    <span className="text-sm font-medium text-ink">{iniciativa.nome}</span>
-                                  </span>
-                                  <NodeSummary etapas={etapas} krCount={krs.length} />
-                                </AccordionTrigger>
-                                <AccordionContent className="flex flex-col gap-3 px-3 pb-3">
-                                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-soft">
-                                    <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                                      <span>Setor: <span className="font-medium text-ink">{iniciativa.setor}</span></span>
-                                      <span className="flex items-center gap-1">
-                                        <UserIcon aria-hidden className="size-3.5" />
-                                        Gestor: <span className="font-medium text-ink">{iniciativa.gestor}</span>
-                                      </span>
+                            {o.iniciativas.map(({ iniciativa, krs, etapas }) => {
+                              const krIds = krs.map(({ kr }) => kId(kr.id))
+
+                              return (
+                                <AccordionItem key={iniciativa.id} value={iId(iniciativa.id)} className="rounded-md border border-dashed border-line bg-panel">
+                                  <AccordionTrigger className="items-center rounded-md px-3 py-2 hover:no-underline">
+                                    <span className="flex min-w-0 flex-col text-left">
+                                      <span className="text-[11px] font-medium tracking-wide text-ink-soft uppercase">Iniciativa</span>
+                                      <span className="text-sm font-medium text-ink">{iniciativa.nome}</span>
                                     </span>
-                                    <Link
-                                      href={`/planos/${iniciativa.id}`}
-                                      className="inline-flex items-center gap-1 rounded-md px-3 py-1 text-sm font-medium text-teal hover:bg-line/10"
-                                    >
-                                      Gerenciar iniciativa
-                                      <ArrowUpRightIcon className="size-3.5" />
-                                    </Link>
-                                  </div>
-
-                                  {krs.length === 0 && <p className="text-sm text-ink-soft">Nenhum KR cadastrado para esta iniciativa.</p>}
-
-                                  {krs.map(({ kr, etapas: krEtapas }) => (
-                                    <section key={kr.id} aria-label={`KR: ${kr.nome}`} className="rounded-md border border-line bg-bg">
-                                      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-3 py-2">
-                                        <span className="flex min-w-0 flex-col">
-                                          <span className="text-[11px] font-medium tracking-wide text-ink-soft uppercase">
-                                            KR · {kr.setor || 'Setor não informado'}
-                                          </span>
-                                          <span className="text-sm font-medium text-balance text-ink">{kr.nome}</span>
-                                          {kr.responsavel && (
-                                            <span className="text-xs text-ink-soft">Responsável: {kr.responsavel}</span>
-                                          )}
+                                    <NodeSummary etapas={etapas} krCount={krs.length} />
+                                  </AccordionTrigger>
+                                  <AccordionContent className="flex flex-col gap-3 px-3 pb-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-soft">
+                                      <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                                        <span>Setor: <span className="font-medium text-ink">{iniciativa.setor}</span></span>
+                                        <span className="flex items-center gap-1">
+                                          <UserIcon aria-hidden className="size-3.5" />
+                                          Gestor: <span className="font-medium text-ink">{iniciativa.gestor}</span>
                                         </span>
-                                        <ProgressBar value={averageProgress(krEtapas)} showLabel className="w-32" label={`Progresso do KR ${kr.nome}`} />
-                                      </header>
-                                      <div className="py-1.5">
-                                        {krEtapas.length === 0 ? (
-                                          <p className="px-3 py-1 text-xs text-ink-soft">Nenhuma etapa cadastrada neste KR.</p>
-                                        ) : (
-                                          <>
-                                            <EtapaRowHeader />
-                                            <div className="flex flex-col px-1">
-                                              {krEtapas.map((e) => <EtapaRow key={e.id} etapa={e} />)}
-                                            </div>
-                                          </>
-                                        )}
-                                      </div>
-                                    </section>
-                                  ))}
-                                </AccordionContent>
-                              </AccordionItem>
-                            ))}
+                                      </span>
+                                      <Link
+                                        href={`/planos/${iniciativa.id}`}
+                                        className="inline-flex items-center gap-1 rounded-md px-3 py-1 text-sm font-medium text-teal hover:bg-line/10"
+                                      >
+                                        Gerenciar iniciativa
+                                        <ArrowUpRightIcon className="size-3.5" />
+                                      </Link>
+                                    </div>
+
+                                    {krs.length === 0 && (
+                                      <p className="text-sm text-ink-soft">Nenhum KR cadastrado para esta iniciativa.</p>
+                                    )}
+
+                                    {krs.length > 0 && (
+                                      <Accordion
+                                        multiple
+                                        value={openIds.filter((id) => krIds.includes(id))}
+                                        onValueChange={levelChange(krIds)}
+                                        className="gap-1.5"
+                                      >
+                                        {krs.map(({ kr, etapas: krEtapas }) => (
+                                          <AccordionItem
+                                            key={kr.id}
+                                            value={kId(kr.id)}
+                                            className="rounded-md border border-line bg-bg"
+                                          >
+                                            <AccordionTrigger className="items-center rounded-md px-3 py-2 hover:no-underline">
+                                              <span className="flex min-w-0 flex-col text-left">
+                                                <span className="text-[11px] font-medium tracking-wide text-ink-soft uppercase">
+                                                  KR · {kr.setor || 'Setor não informado'}
+                                                </span>
+                                                <span className="text-sm font-medium text-balance text-ink">{kr.nome}</span>
+                                                {kr.responsavel && (
+                                                  <span className="text-xs text-ink-soft">Responsável: {kr.responsavel}</span>
+                                                )}
+                                              </span>
+                                              <ProgressBar
+                                                value={averageProgress(krEtapas)}
+                                                showLabel
+                                                className="w-32"
+                                                label={`Progresso do KR ${kr.nome}`}
+                                              />
+                                            </AccordionTrigger>
+                                            <AccordionContent className="px-2 pb-2">
+                                              {krEtapas.length === 0 ? (
+                                                <p className="px-3 py-1 text-xs text-ink-soft">Nenhuma etapa cadastrada neste KR.</p>
+                                              ) : (
+                                                <>
+                                                  <EtapaRowHeader />
+                                                  <div className="flex flex-col px-1">
+                                                    {krEtapas.map((e) => <EtapaRow key={e.id} etapa={e} />)}
+                                                  </div>
+                                                </>
+                                              )}
+                                            </AccordionContent>
+                                          </AccordionItem>
+                                        ))}
+                                      </Accordion>
+                                    )}
+                                  </AccordionContent>
+                                </AccordionItem>
+                              )
+                            })}
                           </Accordion>
                         </AccordionContent>
                       </AccordionItem>
